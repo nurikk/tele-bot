@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+aiogram = "3.2.0"
+openai = "1.6.0"
+pydantic-settings ="2.1.0"
+
+#https://github.com/python-botogram/botogram
+
+[dev-packages]
+
+pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.4"
