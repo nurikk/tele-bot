@@ -18,10 +18,16 @@ resource "aws_cloudwatch_log_group" "logs" {
 
 
 locals {
-  env = {
-    OPENAI_API_KEY     = var.OPENAI_API_KEY,
-    TELEGRAM_BOT_TOKEN = var.TELEGRAM_BOT_TOKEN
-  }
+  env = [
+    {
+      "name" : "OPENAI_API_KEY",
+      "value" : var.OPENAI_API_KEY
+    },
+    {
+      "name" : "TELEGRAM_BOT_TOKEN",
+      "value" : var.TELEGRAM_BOT_TOKEN
+    }
+  ]
 }
 resource "aws_ecs_task_definition" "task" {
   family                   = "tele-bot-task"
