@@ -1,11 +1,10 @@
 import json
 
-from aiogram import types, Router
-from aiogram.fsm.context import FSMContext
+from aiogram import types
 from aiogram.types import ReplyKeyboardRemove
 
 from src.commands import card_command, img_command
-from src.fsm.card import CardForm
+
 from src.oai import client
 
 
