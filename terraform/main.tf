@@ -13,9 +13,16 @@ resource "aws_default_subnet" "default_subnet_a" {
 }
 
 resource "aws_cloudwatch_log_group" "logs" {
-  name = "/ecs/tele-bot-task"  
+  name = "/ecs/tele-bot-task"
 }
 
+
+locals {
+  env = {
+    OPENAI_API_KEY     = var.OPENAI_API_KEY,
+    TELEGRAM_BOT_TOKEN = var.TELEGRAM_BOT_TOKEN
+  }
+}
 resource "aws_ecs_task_definition" "task" {
   family                   = "tele-bot-task"
   container_definitions    = <<DEFINITION
@@ -33,7 +40,8 @@ resource "aws_ecs_task_definition" "task" {
                     "awslogs-region": "eu-west-1",
                     "awslogs-stream-prefix": "ecs"
                 }
-        }
+        },
+      "environment": ${jsonencode(local.env)}
     }
   ]
   DEFINITION
