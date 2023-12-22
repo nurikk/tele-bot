@@ -1,9 +1,15 @@
+# https://github.com/Rose-stack/docker-aws-ecs-using-terraform/blob/main/main.tf
 resource "aws_ecr_repository" "app_ecr_repo" {
   name = "tele-bot-repo"
 }
 
 resource "aws_ecs_cluster" "cluster" {
   name = "tele-bot-cluster"
+}
+
+resource "aws_default_subnet" "default_subnet_a" {
+  # Use your own region here but reference to subnet 1a
+  availability_zone = "ue-west-1a"
 }
 
 resource "aws_ecs_task_definition" "task" {
@@ -52,6 +58,14 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 resource "aws_default_vpc" "default_vpc" {
 }
 
+resource "aws_security_group" "service_security_group" {
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 
 resource "aws_ecs_service" "app_service" {
   name            = "tele-bot-service"               # Name the  service
@@ -59,4 +73,10 @@ resource "aws_ecs_service" "app_service" {
   task_definition = aws_ecs_task_definition.task.arn # Reference the task that the service will spin up
   launch_type     = "FARGATE"
   desired_count   = 1
+
+  network_configuration {
+    subnets          = [aws_default_subnet.default_subnet_a.id]
+    assign_public_ip = false
+    security_groups  = [aws_security_group.service_security_group.id] # Set up the security group
+  }
 }
