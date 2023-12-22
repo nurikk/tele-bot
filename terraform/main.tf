@@ -31,7 +31,6 @@ resource "aws_ecs_task_definition" "task" {
                 "options": {
                     "awslogs-group": "${aws_cloudwatch_log_group.logs.name}",
                     "awslogs-region": "eu-west-1",
-                    "awslogs-create-group": "false",
                     "awslogs-stream-prefix": "ecs"
                 }
         }
