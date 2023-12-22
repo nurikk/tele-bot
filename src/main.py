@@ -14,9 +14,7 @@ from src.message_handlers.img import register as register_img_handler
 async def main(dispatcher: Dispatcher) -> None:
     register_start_handler(dispatcher)
     register_img_handler(dispatcher)
-    form_router = register_card_handler(dispatcher)
-
-    dispatcher.include_router(form_router)
+    register_card_handler(dispatcher)
 
     bot = Bot(token=settings.telegram_bot_token, parse_mode=ParseMode.HTML)
     await dispatcher.start_polling(bot)

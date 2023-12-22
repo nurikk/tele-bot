@@ -8,6 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, URLInputFile
 from src.commands import card_command
 from src.fsm.card import CardForm
 from src.oai import client
+from src.prompt_generator import generate_prompt
 
 
 def register(dp):
@@ -73,7 +74,7 @@ def register(dp):
             "Please wait for the image to be generated",
             reply_markup=ReplyKeyboardRemove(),
         )
-        prompt = f"Generate a postcard for my {data['relationship']} for {data['reason']}. He is {data['description']}. Depict {data['depiction']}. Use {data['style']} style. Add appropriate text with congratulations with {data['reason']}."
+        prompt = generate_prompt(data=data, user=message.from_user)
         await message.answer(
             prompt,
             reply_markup=ReplyKeyboardRemove(),
@@ -91,4 +92,5 @@ def register(dp):
                 reply_markup=ReplyKeyboardRemove(),
             )
 
-    return form_router
+
+    dp.include_router(form_router)

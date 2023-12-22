@@ -1,5 +1,4 @@
 from aiogram import Dispatcher
-from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
@@ -17,4 +16,8 @@ def register(dp: Dispatcher):
         # and the target chat will be passed to :ref:`aiogram.methods.send_message.SendMessage`
         # method automatically or call API method directly via
         # Bot instance: `bot.send_message(chat_id=message.chat.id, ...)`
-        await message.answer(f"Hello, {hbold(message.from_user.full_name)}!")
+        welcome_messages = [
+            f"Hello, {hbold(message.from_user.full_name)}!",
+            "Use /card to generate a card."
+        ]
+        await message.answer("\n".join(welcome_messages))
