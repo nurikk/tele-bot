@@ -9,7 +9,7 @@ resource "aws_ecs_cluster" "cluster" {
 
 resource "aws_default_subnet" "default_subnet_a" {
   # Use your own region here but reference to subnet 1a
-  availability_zone = "ue-west-1a"
+  availability_zone = "eu-west-1a"
 }
 
 resource "aws_ecs_task_definition" "task" {
