@@ -74,7 +74,7 @@ def register(dp):
             "Please wait for the image to be generated",
             reply_markup=ReplyKeyboardRemove(),
         )
-        prompt = generate_prompt(data=data, user=message.from_user)
+        prompt = generate_prompt(data=data)
         await message.answer(
             prompt,
             reply_markup=ReplyKeyboardRemove(),
