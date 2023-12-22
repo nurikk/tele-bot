@@ -41,7 +41,7 @@ def register(dp):
         )
 
     @form_router.message(CardForm.description)
-    async def process_relationship(message: types.Message, state: FSMContext) -> None:
+    async def process_description(message: types.Message, state: FSMContext) -> None:
         await state.update_data(description=message.text)
         await state.set_state(CardForm.depiction)
         await message.answer(
@@ -91,6 +91,5 @@ def register(dp):
                 image,
                 reply_markup=ReplyKeyboardRemove(),
             )
-
 
     dp.include_router(form_router)
