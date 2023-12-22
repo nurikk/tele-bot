@@ -6,9 +6,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 
 from src.settings import settings
-from message_handlers.start import register as register_start_handler
-from message_handlers.card import register as register_card_handler
-from message_handlers.img import register as register_img_handler
+from src.message_handlers.start import register as register_start_handler
+from src.message_handlers.card import register as register_card_handler
+from src.message_handlers.img import register as register_img_handler
 
 
 async def main(dispatcher: Dispatcher) -> None:
