@@ -25,7 +25,7 @@ jobs:
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.1.1
         id: plan-upload
         with:
-          workspace: ${{ env.TF_WORKSPACE }}
+          workspace: "tele-bot"
           directory: ${{ env.CONFIG_DIRECTORY }}
           speculative: true
 
