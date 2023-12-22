@@ -21,7 +21,16 @@ resource "aws_ecs_task_definition" "task" {
       "image": "${aws_ecr_repository.app_ecr_repo.repository_url}",
       "essential": true,    
       "memory": 512,
-      "cpu": 256
+      "cpu": 256,
+      "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/tele-bot-task",
+                    "awslogs-region": "eu-west-1",
+                    "awslogs-create-group": "true",
+                    "awslogs-stream-prefix": "ecs"
+                }
+        }
     }
   ]
   DEFINITION
