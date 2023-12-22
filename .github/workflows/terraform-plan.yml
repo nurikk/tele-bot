@@ -1,15 +1,11 @@
 ---
   name: Terraform Cloud Speculative Run
-  
   on:
     pull_request:
       branches:
-
         - master
       paths:
         - 'terraform/**.tf'
-  
-
   env:
     TF_CLOUD_ORGANIZATION: "nurikodd"
     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
@@ -21,11 +17,7 @@
   
   jobs:
     terraform-cloud-speculative-run:
-      runs-on: ubuntu-latest
-      ## OPTIONAL: can scope variables to this specific job
-      ## Example:
-      # env:
-      #  TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORG }}
+      runs-on: ubuntu-latest      
       steps:
         - uses: actions/checkout@v3
   
@@ -37,24 +29,18 @@
             speculative: true
   
         - uses: hashicorp/tfc-workflows-github/actions/create-run@v1.1.1
-          id: run
-          ## run may fail, if so continue to output PR comment
-          ## step.terraform-cloud-check-run-status will fail job after pr comment is created/updated.
+          id: run          
           continue-on-error: true
           with:
             workspace: ${{ env.TF_WORKSPACE }}
             configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
-            plan_only: true
-            ## OPTIONAL: set your own message for run. A default message will be defined for you.
-            ## Example:
-            # message: "Triggered From GitHub Actions CI ${{ github.sha }}"
+            plan_only: true            
   
         - uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.1.1
           id: plan-output
           with:
             plan: ${{ steps.run.outputs.plan_id }}
   
-        ## REQUIRED: Workflow permissions: `Read and write permissions`
         - uses: actions/github-script@v6
           if: github.event_name == 'pull_request'
           with:
