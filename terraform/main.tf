@@ -76,7 +76,7 @@ resource "aws_ecs_service" "app_service" {
 
   network_configuration {
     subnets          = [aws_default_subnet.default_subnet_a.id]
-    assign_public_ip = false
+    assign_public_ip = true
     security_groups  = [aws_security_group.service_security_group.id] # Set up the security group
   }
 }
