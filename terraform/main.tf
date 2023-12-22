@@ -12,6 +12,10 @@ resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = "eu-west-1a"
 }
 
+resource "aws_cloudwatch_log_group" "logs" {
+  name = "/ecs/tele-bot-task"  
+}
+
 resource "aws_ecs_task_definition" "task" {
   family                   = "tele-bot-task"
   container_definitions    = <<DEFINITION
@@ -25,9 +29,9 @@ resource "aws_ecs_task_definition" "task" {
       "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/tele-bot-task",
+                    "awslogs-group": "${aws_cloudwatch_log_group.logs.name}}",
                     "awslogs-region": "eu-west-1",
-                    "awslogs-create-group": "true",
+                    "awslogs-create-group": "false",
                     "awslogs-stream-prefix": "ecs"
                 }
         }
