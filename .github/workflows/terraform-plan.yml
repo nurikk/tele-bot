@@ -1,80 +1,102 @@
-name: "Terraform Plan"
+---
+  name: Terraform Cloud Speculative Run
+  
+  on:
+    pull_request:
+      branches:
 
-on:
-  pull_request:
+        - master
+      paths:
+        - 'terraform/**.tf'
+  
 
-env:
-  TF_CLOUD_ORGANIZATION: "nurikodd"
-  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
-  TF_WORKSPACE: "tele-bot"
-  CONFIG_DIRECTORY: "./terraform/"
-  TF_LOG: DEBUG
+  env:
+    TF_CLOUD_ORGANIZATION: "nurikodd"
+    TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+    TF_WORKSPACE: "tele-bot"
+    CONFIG_DIRECTORY: "./terraform/" ## Directory of your Terraform Configuration. Relative to the project root.
 
-jobs:
-  terraform:
-    name: "Terraform Plan"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Upload Configuration
-        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.1.1
-        id: plan-upload
-        with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          directory: ${{ env.CONFIG_DIRECTORY }}
-          speculative: true
-
-      - name: Create Plan Run
-        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.1.1
-        id: plan-run
-        with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
-          plan_only: true
-
-      - name: Get Plan Output
-        uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.1.1
-        id: plan-output
-        with:
-          plan: ${{ fromJSON(steps.plan-run.outputs.payload).data.relationships.plan.data.id }}
-
-      - name: Update PR
-        uses: actions/github-script@v6
-        id: plan-comment
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // 1. Retrieve existing bot comments for the PR
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
-            });
-            const output = `#### Terraform Cloud Plan Output
-               \`\`\`
-               Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
-               \`\`\`
-               [Terraform Cloud Plan](${{ steps.plan-run.outputs.run_link }})
-               `;
-            // 3. Delete previous comment so PR timeline makes sense
-            if (botComment) {
-              github.rest.issues.deleteComment({
+    TF_LOG: DEBUG ## Helpful for troubleshooting
+    # TF_MAX_TIMEOUT: "30m" ## If you wish to override the default "1h"
+  
+  jobs:
+    terraform-cloud-speculative-run:
+      runs-on: ubuntu-latest
+      ## OPTIONAL: can scope variables to this specific job
+      ## Example:
+      # env:
+      #  TF_CLOUD_ORGANIZATION: ${{ secrets.TF_CLOUD_ORG }}
+      steps:
+        - uses: actions/checkout@v3
+  
+        - uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.1.1
+          id: upload
+          with:
+            workspace: ${{ env.TF_WORKSPACE }}
+            directory: ${{ env.CONFIG_DIRECTORY }}
+            speculative: true
+  
+        - uses: hashicorp/tfc-workflows-github/actions/create-run@v1.1.1
+          id: run
+          ## run may fail, if so continue to output PR comment
+          ## step.terraform-cloud-check-run-status will fail job after pr comment is created/updated.
+          continue-on-error: true
+          with:
+            workspace: ${{ env.TF_WORKSPACE }}
+            configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+            plan_only: true
+            ## OPTIONAL: set your own message for run. A default message will be defined for you.
+            ## Example:
+            # message: "Triggered From GitHub Actions CI ${{ github.sha }}"
+  
+        - uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.1.1
+          id: plan-output
+          with:
+            plan: ${{ steps.run.outputs.plan_id }}
+  
+        ## REQUIRED: Workflow permissions: `Read and write permissions`
+        - uses: actions/github-script@v6
+          if: github.event_name == 'pull_request'
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              // 1. Retrieve existing bot comments for the PR
+              const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                comment_id: botComment.id,
-              });
-            }
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            });
+                issue_number: context.issue.number,
+              })
+              const botComment = comments.find(comment => {
+                return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
+              })
+              const output = `#### Terraform Cloud Plan Output
+                 \`\`\`\n
+                 Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
+                 \`\`\`
+                 [Terraform Cloud Plan](${{ steps.run.outputs.run_link }})
+                 `
+              // 3. If we have a comment, update it, otherwise create a new one
+              if (botComment) {
+                github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: output
+                })
+              } else {
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: output
+                })
+              }
+  
+          ## Check Run Status, if not planned_and_finished fail the job
+        - id: terraform-cloud-check-run-status
+          if: ${{ steps.run.outputs.run_status != 'planned_and_finished'}}
+          run: |
+            echo "Terraform Cloud Run Failed or Requires Further Attention"
+            echo "Run Status: '${{ steps.run.outputs.run_status }}'"
+            echo "${{ steps.run.outputs.run_link }}"
+            exit 1
