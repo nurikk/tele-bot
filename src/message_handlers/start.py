@@ -3,10 +3,12 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
+from src.commands import start_command
+
 
 def register(dp: Dispatcher):
-    @dp.message(CommandStart())
-    async def command_start_handler(message: Message) -> None:
+    @dp.message(start_command)
+    async def handler(message: Message) -> None:
         """
         This handler receives messages with `/start` command
         """

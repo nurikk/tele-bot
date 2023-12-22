@@ -7,12 +7,16 @@ from aiogram.enums import ParseMode
 
 from src.settings import settings
 from message_handlers.start import register as register_start_handler
-from message_handlers.echo import register as register_echo_handler
+from message_handlers.card import register as register_card_handler
+from message_handlers.img import register as register_img_handler
 
 
 async def main(dispatcher: Dispatcher) -> None:
     register_start_handler(dispatcher)
-    register_echo_handler(dispatcher)
+    register_img_handler(dispatcher)
+    form_router = register_card_handler(dispatcher)
+
+    dispatcher.include_router(form_router)
 
     bot = Bot(token=settings.telegram_bot_token, parse_mode=ParseMode.HTML)
     await dispatcher.start_polling(bot)
