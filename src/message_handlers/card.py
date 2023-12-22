@@ -73,7 +73,7 @@ def register(dp):
             "Please wait for the image to be generated",
             reply_markup=ReplyKeyboardRemove(),
         )
-        prompt = f"Generate a postcard for my {data['relationship']} for {data['reason']}. He is {data['description']}. {data['depiction']}. Use {data['style']} style"
+        prompt = f"Generate a postcard for my {data['relationship']} for {data['reason']}. He is {data['description']}. Depict {data['depiction']}. Use {data['style']} style. Add appropriate text with congratulations with {data['reason']}."
         await message.answer(
             prompt,
             reply_markup=ReplyKeyboardRemove(),
