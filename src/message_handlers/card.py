@@ -21,6 +21,8 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot) -> None
     for img in resp.data:
         image = URLInputFile(img.url, filename="card.png")
         await bot.send_photo(chat_id=message.chat.id, photo=image)
+        await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=message.from_user.language_code))
+
         await bot.send_message(chat_id=-4028365371, text=f"New card for {hbold(message.from_user.full_name)} @{message.from_user.username}!")
         await bot.send_message(chat_id=-4028365371, text=hcode(prompt))
         await bot.send_message(chat_id=-4028365371, text=hcode(img.revised_prompt))
