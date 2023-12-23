@@ -31,7 +31,7 @@ locals {
   ]
 }
 resource "aws_ecs_task_definition" "task" {
-  family                = "tele-bot-task"
+  family = "tele-bot-task"
   container_definitions = jsonencode([
     {
       "name" : "telebot",
@@ -81,12 +81,23 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 
 
 resource "aws_security_group" "service_security_group" {
+  vpc_id = aws_vpc.telebot_vpc.id
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description      = "All traffic from VPC"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = [aws_vpc.telebot_vpc.cidr_block]
+    ipv6_cidr_blocks = [aws_vpc.telebot_vpc.ipv6_cidr_block]
+  }
+
 }
 
 resource "aws_ecs_service" "app_service" {
@@ -97,6 +108,7 @@ resource "aws_ecs_service" "app_service" {
   desired_count                      = 1
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
+  
 
   network_configuration {
     subnets          = [aws_default_subnet.default_subnet_a.id]
