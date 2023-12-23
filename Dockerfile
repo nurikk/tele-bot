@@ -11,4 +11,5 @@ RUN pipenv install --system --deploy --dev
 COPY ./src ./src
 COPY ./entrypoint.sh ./
 COPY ./alembic.ini ./
+COPY ./alembic ./alembic
 CMD ["./entrypoint.sh"]
