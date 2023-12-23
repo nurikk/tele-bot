@@ -16,32 +16,15 @@ from src.prompt_generator import generate_prompt
 async def finish(message: types.Message, data: dict[str, any], bot: Bot) -> None:
     text = json.dumps(data, indent=4, ensure_ascii=False)
     logging.info(text)
-    await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
-
     prompt = generate_prompt(data=data, locale=message.from_user.language_code)
-    await message.answer(
-        prompt,
-        reply_markup=ReplyKeyboardRemove(),
-    )
     resp = await client.images.generate(prompt=prompt, model="dall-e-3")
-    print(resp)
     for img in resp.data:
-        await message.answer(text=img.revised_prompt, reply_markup=ReplyKeyboardRemove())
-        image = URLInputFile(
-            img.url,
-            filename="card.png"
-        )
-        await message.reply_photo(
-            image,
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        await bot.send_message(chat_id=-4028365371, text=f"New card! for @{message.from_user.username}")
+        image = URLInputFile(img.url, filename="card.png")
+        await bot.send_photo(chat_id=message.chat.id, photo=image)
+        await bot.send_message(chat_id=-4028365371, text=f"New card for @{message.from_user.username}!")
         await bot.send_message(chat_id=-4028365371, text=hcode(prompt))
         await bot.send_message(chat_id=-4028365371, text=hcode(img.revised_prompt))
-        await bot.send_photo(
-            chat_id=-4028365371,
-            photo=image
-        )
+        await bot.send_photo(chat_id=-4028365371, photo=image)
 
 
 def generate_message_handler(form_router: Router, start_command, key: str, next_state, answer: str):
