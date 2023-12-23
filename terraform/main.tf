@@ -26,7 +26,7 @@ locals {
     },
     {
       "name" : "DB_URL",
-      "value" : 'postgresql+asyncpg://${aws_db_instance.db.username}:${aws_db_instance.db.password}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.name}'
+      "value" : "postgresql+asyncpg://${aws_db_instance.db.username}:${aws_db_instance.db.password}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.name}"
     }
   ]
 }
