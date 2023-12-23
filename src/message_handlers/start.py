@@ -1,3 +1,4 @@
+import i18n
 from aiogram import Dispatcher
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
@@ -17,7 +18,7 @@ def register(dp: Dispatcher):
         # method automatically or call API method directly via
         # Bot instance: `bot.send_message(chat_id=message.chat.id, ...)`
         welcome_messages = [
-            f"Hello, {hbold(message.from_user.full_name)}!",
-            "Use /card to generate a card."
+            i18n.t('first_message', name=hbold(message.from_user.full_name), locale=message.from_user.language_code),
+            i18n.t('commands.card', locale=message.from_user.language_code)
         ]
         await message.answer("\n".join(welcome_messages))

@@ -1,0 +1,16 @@
+first_message: 'Hello %{name}!'
+commands:
+  card: "Use /card to generate a card."
+card_form:
+  reason: "What's the reason of postcard? (Ex: merry christmas, birthday, etc)"
+  relationship: "What is your relationship with the person being congratulated? (Ex: friend, daughter, wife)"
+  description: "Describe the person being congratulated. (Ex: my friend is 40 years old and loves to travel)"
+  depiction: "What would you like to depict on a postcard? (Ex: him riding a dragon and flying over the moon)"
+  style: "Choose the postcard style. (Ex: cartoon, watercolor, andy warhol)"
+  wait: "Please wait for the image to be generated."
+
+prompt: "Create a %{reason} postcard for my %{relationship}.
+ This person is %{description}. 
+ Depict %{depiction}. 
+ Render the entire scene in a %{style} style. 
+ Make sure to include congratulations text celebrating %{reason}."

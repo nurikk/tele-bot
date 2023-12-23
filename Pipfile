@@ -7,8 +7,7 @@ name = "pypi"
 aiogram = "3.2.0"
 openai = "1.6.0"
 pydantic-settings ="2.1.0"
-
-#https://github.com/python-botogram/botogram
+python-i18n = {extras=["YAML"], version="0.3.9"}
 
 [dev-packages]
 
@@ -18,4 +17,3 @@ pytest-asyncio = "*"
 
 [requires]
 python_version = "3.11"
-python_full_version = "3.11.4"

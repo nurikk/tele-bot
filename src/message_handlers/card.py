@@ -1,6 +1,7 @@
 import json
 import logging
 
+import i18n
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove, URLInputFile
@@ -16,7 +17,7 @@ async def finish(message: types.Message, data: dict[str, any]) -> None:
     logging.info(text)
     await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
 
-    prompt = generate_prompt(data=data)
+    prompt = generate_prompt(data=data, locale=message.from_user.language_code)
     await message.answer(
         prompt,
         reply_markup=ReplyKeyboardRemove(),
@@ -42,7 +43,7 @@ def generate_message_handler(form_router, start_command, key: str, next_state, a
             logging.info(f"Updating data for {key=} {message.text=}")
             await state.update_data({key: message.text})
         if answer:
-            await message.answer(answer)
+            await message.answer(i18n.t(answer, locale=message.from_user.language_code))
         if next_state:
             await state.set_state(next_state)
         else:
@@ -53,12 +54,12 @@ def generate_message_handler(form_router, start_command, key: str, next_state, a
 def register(dp):
     form_router = Router()
     commands = [
-        (card_command, CardForm.reason, None, "What's the reason of postcard? (Ex: merry christmas, birthday, etc)"),
-        (CardForm.reason, CardForm.relationship, "reason", "What is your relationship with the person being congratulated? (Ex: fried, daughter, wife)"),
-        (CardForm.relationship, CardForm.description, "relationship", "Describe the person being congratulated. (Ex: my friend is 40 years old and loves to travel)"),
-        (CardForm.description, CardForm.depiction, "description", "What would you like to depict on a postcard? (Ex: him riding a dragon and flying over the moon)"),
-        (CardForm.depiction, CardForm.style, "depiction", "Choose the postcard style. (Ex: cartoon, watercolor, andy warhol)"),
-        (CardForm.style, None, "style", "Please wait for the image to be generated."),
+        (card_command, CardForm.reason, None, "card_form.reason"),
+        (CardForm.reason, CardForm.relationship, "reason", "card_form.relationship"),
+        (CardForm.relationship, CardForm.description, "relationship", "card_form.description"),
+        (CardForm.description, CardForm.depiction, "description", "card_form.depiction"),
+        (CardForm.depiction, CardForm.style, "depiction", "card_form.style"),
+        (CardForm.style, None, "style", "card_form.wait")
     ]
 
     for start_command, next_state, key, question in commands:
