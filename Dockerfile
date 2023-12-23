@@ -9,4 +9,4 @@ COPY Pipfile.lock .
 
 RUN pipenv install --system --deploy --dev
 COPY ./src ./src
-CMD ["python", "-m", "src.main"]
+CMD ["./entrypoint.sh"]

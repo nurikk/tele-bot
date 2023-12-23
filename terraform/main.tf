@@ -5,8 +5,6 @@ data "aws_availability_zones" "available" {
 }
 
 
-
-
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = data.aws_availability_zones.available.names[0]
 }
@@ -25,11 +23,15 @@ locals {
     {
       "name" : "TELEGRAM_BOT_TOKEN",
       "value" : var.TELEGRAM_BOT_TOKEN
+    },
+    {
+      "name" : "DB_URL",
+      "value" : 'postgresql+asyncpg://${aws_db_instance.db.username}:${aws_db_instance.db.password}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.name}'
     }
   ]
 }
 resource "aws_ecs_task_definition" "task" {
-  family = "tele-bot-task"
+  family                = "tele-bot-task"
   container_definitions = jsonencode([
     {
       "name" : "telebot",
@@ -46,7 +48,8 @@ resource "aws_ecs_task_definition" "task" {
         }
       },
       "environment" : local.env
-  }])
+    }
+  ])
 
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
