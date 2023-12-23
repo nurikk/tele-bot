@@ -1,4 +1,5 @@
 resource "aws_db_instance" "db" {
+  identifier                  = "tele-bot-db"
   allocated_storage           = 20
   db_name                     = "telebot"
   engine                      = "postgres"
@@ -6,5 +7,5 @@ resource "aws_db_instance" "db" {
   instance_class              = "db.t3.micro"
   username                    = "bot"
   manage_master_user_password = true
-  parameter_group_name = "default.postgres16"
+  parameter_group_name        = "default.postgres16"
 }
