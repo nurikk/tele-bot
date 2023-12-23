@@ -5,7 +5,7 @@ import i18n
 from aiogram import types, Router, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove, URLInputFile
-from aiogram.utils.markdown import hcode
+from aiogram.utils.markdown import hcode, hbold
 
 from src.commands import card_command
 from src.fsm.card import CardForm
@@ -21,7 +21,7 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot) -> None
     for img in resp.data:
         image = URLInputFile(img.url, filename="card.png")
         await bot.send_photo(chat_id=message.chat.id, photo=image)
-        await bot.send_message(chat_id=-4028365371, text=f"New card for @{message.from_user.username}!")
+        await bot.send_message(chat_id=-4028365371, text=f"New card for {hbold(message.from_user.full_name)} @{message.from_user.username}!")
         await bot.send_message(chat_id=-4028365371, text=hcode(prompt))
         await bot.send_message(chat_id=-4028365371, text=hcode(img.revised_prompt))
         await bot.send_photo(chat_id=-4028365371, photo=image)
