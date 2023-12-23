@@ -1,4 +1,9 @@
 # https://github.com/Rose-stack/docker-aws-ecs-using-terraform/blob/main/main.tf
+data "aws_region" "current" {}
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "aws_ecr_repository" "app_ecr_repo" {
   name = "tele-bot-repo"
 }
@@ -9,7 +14,7 @@ resource "aws_ecs_cluster" "cluster" {
 
 resource "aws_default_subnet" "default_subnet_a" {
   # Use your own region here but reference to subnet 1a
-  availability_zone = "eu-west-1a"
+  availability_zone = data.aws_availability_zones.available.names[0]
 }
 
 resource "aws_cloudwatch_log_group" "logs" {
@@ -42,7 +47,7 @@ resource "aws_ecs_task_definition" "task" {
         "logDriver" : "awslogs",
         "options" : {
           "awslogs-group" : aws_cloudwatch_log_group.logs.name,
-          "awslogs-region" : "eu-west-1",
+          "awslogs-region" : data.aws_region.current.name,
           "awslogs-stream-prefix" : "ecs"
         }
       },
