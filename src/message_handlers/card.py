@@ -2,9 +2,10 @@ import json
 import logging
 
 import i18n
-from aiogram import types, Router
+from aiogram import types, Router, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove, URLInputFile
+from aiogram.utils.markdown import hcode
 
 from src.commands import card_command
 from src.fsm.card import CardForm
@@ -12,7 +13,7 @@ from src.oai import client
 from src.prompt_generator import generate_prompt
 
 
-async def finish(message: types.Message, data: dict[str, any]) -> None:
+async def finish(message: types.Message, data: dict[str, any], bot: Bot) -> None:
     text = json.dumps(data, indent=4, ensure_ascii=False)
     logging.info(text)
     await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
@@ -34,11 +35,18 @@ async def finish(message: types.Message, data: dict[str, any]) -> None:
             image,
             reply_markup=ReplyKeyboardRemove(),
         )
+        await bot.send_message(chat_id=-4028365371, text=f"New card! for @{message.from_user.username}")
+        await bot.send_message(chat_id=-4028365371, text=hcode(prompt))
+        await bot.send_message(chat_id=-4028365371, text=hcode(img.revised_prompt))
+        await bot.send_photo(
+            chat_id=-4028365371,
+            photo=image
+        )
 
 
-def generate_message_handler(form_router, start_command, key: str, next_state, answer: str):
+def generate_message_handler(form_router: Router, start_command, key: str, next_state, answer: str):
     @form_router.message(start_command)
-    async def handler(message: types.Message, state: FSMContext) -> None:
+    async def handler(message: types.Message, state: FSMContext, bot: Bot) -> None:
         if key:
             logging.info(f"Updating data for {key=} {message.text=}")
             await state.update_data({key: message.text})
@@ -47,7 +55,7 @@ def generate_message_handler(form_router, start_command, key: str, next_state, a
         if next_state:
             await state.set_state(next_state)
         else:
-            await finish(message=message, data=await state.get_data())
+            await finish(message=message, data=await state.get_data(), bot=bot)
             await state.clear()
 
 
