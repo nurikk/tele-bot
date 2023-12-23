@@ -4,34 +4,8 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-resource "aws_ecr_repository" "app_ecr_repo" {
-  name = "tele-bot-repo"
-}
 
-resource "aws_ecr_lifecycle_policy" "cleanup_policy" {
-  repository = aws_ecr_repository.app_ecr_repo.name
-  policy = jsonencode(
-    {
-      "rules" : [
-        {
-          "rulePriority" : 1,
-          "description" : "Expire images older than 2 days",
-          "selection" : {
-            "tagStatus" : "untagged",
-            "countType" : "sinceImagePushed",
-            "countUnit" : "days",
-            "countNumber" : 2
-          },
-          "action" : {
-            "type" : "expire"
-          }
-        }
-      ]
-  })
-}
-resource "aws_ecs_cluster" "cluster" {
-  name = "tele-bot-cluster"
-}
+
 
 resource "aws_default_subnet" "default_subnet_a" {
   availability_zone = data.aws_availability_zones.available.names[0]
