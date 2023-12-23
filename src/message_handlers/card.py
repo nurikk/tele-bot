@@ -2,7 +2,7 @@ import json
 import logging
 
 import i18n
-from aiogram import types, Router, Bot
+from aiogram import types, Router, Bot, Dispatcher
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove, URLInputFile
 from aiogram.utils.markdown import hcode, hbold
@@ -44,7 +44,7 @@ def generate_message_handler(form_router: Router, start_command, key: str, next_
             await state.clear()
 
 
-def register(dp):
+def register(dp: Dispatcher):
     form_router = Router()
     commands = [
         (card_command, CardForm.reason, None, "card_form.reason"),
