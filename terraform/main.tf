@@ -34,7 +34,6 @@ resource "aws_ecs_cluster" "cluster" {
 }
 
 resource "aws_default_subnet" "default_subnet_a" {
-  # Use your own region here but reference to subnet 1a
   availability_zone = data.aws_availability_zones.available.names[0]
 }
 
@@ -75,10 +74,10 @@ resource "aws_ecs_task_definition" "task" {
       "environment" : local.env
   }])
 
-  requires_compatibilities = ["FARGATE"] # use Fargate as the lauch type
-  network_mode             = "awsvpc"    # add the awsvpc network mode as this is required for Fargate
-  memory                   = 512         # Specify the memory the container requires
-  cpu                      = 256         # Specify the CPU the container requires
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  memory                   = 512
+  cpu                      = 256
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 }
 
@@ -118,15 +117,15 @@ resource "aws_security_group" "service_security_group" {
 }
 
 resource "aws_ecs_service" "app_service" {
-  name            = "tele-bot-service"               # Name the  service
-  cluster         = aws_ecs_cluster.cluster.id       # Reference the created Cluster
-  task_definition = aws_ecs_task_definition.task.arn # Reference the task that the service will spin up
+  name            = "tele-bot-service"
+  cluster         = aws_ecs_cluster.cluster.id
+  task_definition = aws_ecs_task_definition.task.arn
   launch_type     = "FARGATE"
   desired_count   = 1
 
   network_configuration {
     subnets          = [aws_default_subnet.default_subnet_a.id]
     assign_public_ip = true
-    security_groups  = [aws_security_group.service_security_group.id] # Set up the security group
+    security_groups  = [aws_security_group.service_security_group.id]
   }
 }
