@@ -10,4 +10,5 @@ COPY Pipfile.lock .
 RUN pipenv install --system --deploy --dev
 COPY ./src ./src
 COPY ./entrypoint.sh ./
+COPY ./alembic.ini ./
 CMD ["./entrypoint.sh"]
