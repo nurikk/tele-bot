@@ -37,3 +37,6 @@ jobs:
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Force deployment
+        run: |
+          aws ecs update-service --cluster tele-bot-cluster --service tele-bot-service --force-new-deployment
