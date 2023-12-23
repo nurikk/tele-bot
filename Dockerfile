@@ -9,5 +9,5 @@ COPY Pipfile.lock .
 
 RUN pipenv install --system --deploy --dev
 COPY ./src ./src
-CMD ./entrypoint.sh ./
+COPY ./entrypoint.sh ./
 CMD ["./entrypoint.sh"]
