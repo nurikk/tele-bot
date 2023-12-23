@@ -30,27 +30,25 @@ locals {
   ]
 }
 resource "aws_ecs_task_definition" "task" {
-  family                   = "tele-bot-task"
-  container_definitions    = <<DEFINITION
-  [
+  family = "tele-bot-task"
+  container_definitions = jsonencode([
     {
-      "name": "telebot",
-      "image": "${aws_ecr_repository.app_ecr_repo.repository_url}",
-      "essential": true,    
-      "memory": 512,
-      "cpu": 256,
-      "logConfiguration": {
-                "logDriver": "awslogs",
-                "options": {
-                    "awslogs-group": "${aws_cloudwatch_log_group.logs.name}",
-                    "awslogs-region": "eu-west-1",
-                    "awslogs-stream-prefix": "ecs"
-                }
-        },
-      "environment": ${jsonencode(local.env)}
-    }
-  ]
-  DEFINITION
+      "name" : "telebot",
+      "image" : aws_ecr_repository.app_ecr_repo.repository_url,
+      "essential" : true,
+      "memory" : 512,
+      "cpu" : 256,
+      "logConfiguration" : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
+          "awslogs-region" : "eu-west-1",
+          "awslogs-stream-prefix" : "ecs"
+        }
+      },
+      "environment" : local.env
+  }])
+
   requires_compatibilities = ["FARGATE"] # use Fargate as the lauch type
   network_mode             = "awsvpc"    # add the awsvpc network mode as this is required for Fargate
   memory                   = 512         # Specify the memory the container requires
