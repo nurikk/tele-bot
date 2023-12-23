@@ -77,10 +77,6 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 
-# Provide a reference to your default VPC
-resource "aws_default_vpc" "default_vpc" {
-}
-
 resource "aws_security_group" "service_security_group" {
   egress {
     from_port   = 0
