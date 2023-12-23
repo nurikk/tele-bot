@@ -14,4 +14,5 @@ resource "aws_db_instance" "db" {
   password             = random_password.db_password.result
   parameter_group_name = "default.postgres16"
   publicly_accessible  = true
+  vpc_security_group_ids = [aws_security_group.service_security_group.id]
 }

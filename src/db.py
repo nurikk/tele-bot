@@ -48,5 +48,4 @@ metadata = models.metadata
 
 
 async def start():
-    pass
-    # await models.create_all()
+    await database.connect()
