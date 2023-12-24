@@ -1,11 +1,14 @@
 import base64
 import json
 import logging
+from enum import Enum
 
 import i18n
-from aiogram import types, Router, Bot, Dispatcher
+from aiogram import types, Router, Bot, Dispatcher, F
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError
 
@@ -25,18 +28,34 @@ async def debug_log(prompt_data: dict, bot: Bot, message: types.Message, prompt:
     await bot.send_photo(chat_id=settings.debug_chat_id, photo=image)
 
 
-async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: User) -> None:
-    prompt = generate_prompt(data=data, locale=message.from_user.language_code)
-    request = await CardRequest.objects.create(user=user,
-                                               request=data,
-                                               generated_prompt=prompt,
-                                               language_code=message.from_user.language_code)
+class Action(str, Enum):
+    ACTION_REGENERATE = "regenerate"
+
+
+class CardGenerationCallback(CallbackData, prefix="my"):
+    action: Action
+    request_id: int
+
+
+async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: User, locale: str) -> None:
+
+    prompt = generate_prompt(data=data, locale=locale)
+    request: CardRequest = await CardRequest.objects.create(user=user,
+                                                            request=data,
+                                                            generated_prompt=prompt,
+                                                            language_code=locale)
     try:
         img = (await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json")).data[0]  # Api only returns one image
 
         image = BufferedInputFile(file=base64.b64decode(img.b64_json), filename="card.png")  # TODO: save images to s3
-        await bot.send_photo(chat_id=message.chat.id, photo=image)
-        await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=message.from_user.language_code))
+        builder = InlineKeyboardBuilder()
+
+        builder.button(text=i18n.t('regenerate', locale=locale),
+                       callback_data=CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request.id).pack())
+
+        await bot.send_photo(chat_id=message.chat.id, photo=image, reply_markup=builder.as_markup())
+
+        await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=locale))
 
         await request.update(revised_prompt=img.revised_prompt)
         await debug_log(prompt_data=data, bot=bot, message=message, prompt=prompt, revised_prompt=img.revised_prompt, image=image)
@@ -58,7 +77,7 @@ def generate_message_handler(form_router: Router, start_command, key: str, next_
         else:
             data = await state.get_data()
             await state.clear()
-            await finish(message=message, data=data, bot=bot, user=user)
+            await finish(message=message, data=data, bot=bot, user=user, locale=message.from_user.language_code)
 
 
 def register(dp: Dispatcher):
@@ -74,5 +93,12 @@ def register(dp: Dispatcher):
 
     for start_command, next_state, key, question in commands:
         generate_message_handler(form_router, start_command, key, next_state, question)
+
+    @form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))
+    async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot):
+        user = await user_from_message(message=query.message)
+        request = await CardRequest.objects.get(id=callback_data.request_id)
+        await query.message.answer(i18n.t("card_form.wait", locale=request.language_code))
+        await finish(message=query.message, data=request.request, bot=bot, user=user, locale=request.language_code)
 
     dp.include_router(form_router)

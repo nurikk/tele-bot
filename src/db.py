@@ -25,7 +25,7 @@ class User(orm.Model):
     registry = models
     fields = {
         "id": orm.Integer(primary_key=True),
-        "telegram_id": orm.Integer(unique=True, index=True),
+        "telegram_id": orm.BigInteger(unique=True, index=True),
         "full_name": orm.String(max_length=1000),
         "username": orm.String(max_length=1000),
     }
