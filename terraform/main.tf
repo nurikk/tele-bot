@@ -5,9 +5,6 @@ data "aws_availability_zones" "available" {
 }
 
 
-resource "aws_default_subnet" "default_subnet_a" {
-  availability_zone = data.aws_availability_zones.available.names[0]
-}
 
 resource "aws_cloudwatch_log_group" "logs" {
   name = "/ecs/tele-bot-task"
@@ -80,23 +77,7 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 
-resource "aws_security_group" "service_security_group" {
-  vpc_id = aws_vpc.telebot_vpc.id
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
-  ingress {
-    description = "All traffic from VPC"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
-  }
-}
 
 resource "aws_ecs_service" "app_service" {
   name                               = "tele-bot-service"
@@ -109,8 +90,10 @@ resource "aws_ecs_service" "app_service" {
 
 
   network_configuration {
-    subnets          = [aws_default_subnet.default_subnet_a.id]
+    subnets = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
     assign_public_ip = true
-    security_groups  = [aws_security_group.service_security_group.id]
+    security_groups = [
+      aws_security_group.this.id
+    ]
   }
 }
