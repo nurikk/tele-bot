@@ -7,6 +7,7 @@ from aiogram import types, Router, Bot, Dispatcher
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile
 from aiogram.utils.markdown import hcode, hbold, hpre
+from openai import BadRequestError
 
 from src.commands import card_command
 from src.db import user_from_message, User, CardRequest
@@ -30,15 +31,18 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: U
                                                request=data,
                                                generated_prompt=prompt,
                                                language_code=message.from_user.language_code)
-    resp = await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json")
-    img = resp.data[0]  # Api only returns one image
+    try:
+        resp = await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json")
+        img = resp.data[0]  # Api only returns one image
 
-    image = BufferedInputFile(file=base64.b64decode(img.b64_json), filename="card.png")  # TODO: save images to s3
-    await bot.send_photo(chat_id=message.chat.id, photo=image)
-    await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=message.from_user.language_code))
+        image = BufferedInputFile(file=base64.b64decode(img.b64_json), filename="card.png")  # TODO: save images to s3
+        await bot.send_photo(chat_id=message.chat.id, photo=image)
+        await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=message.from_user.language_code))
 
-    await request.update(revised_prompt=img.revised_prompt)
-    await debug_log(prompt_data=data, bot=bot, message=message, prompt=prompt, revised_prompt=img.revised_prompt, image=image)
+        await request.update(revised_prompt=img.revised_prompt)
+        await debug_log(prompt_data=data, bot=bot, message=message, prompt=prompt, revised_prompt=img.revised_prompt, image=image)
+    except BadRequestError as e:
+        await message.reply(text=e.body['message'])
 
 
 def generate_message_handler(form_router: Router, start_command, key: str, next_state, answer: str):
