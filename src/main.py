@@ -2,12 +2,13 @@ import asyncio
 import logging
 import sys
 import pathlib
+from datetime import timedelta
 
 import i18n
 
-
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
+from aiogram.fsm.storage.redis import RedisStorage
 
 from src.db import start
 from src.settings import settings
@@ -35,6 +36,7 @@ def init_i18n():
 
 if __name__ == "__main__":
     init_i18n()
-    dp = Dispatcher()
+    storage = RedisStorage.from_url(settings.redis_url, state_ttl=timedelta(days=settings.redis_ttl_days))
+    dp = Dispatcher(storage=storage)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main(dispatcher=dp))

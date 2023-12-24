@@ -39,6 +39,10 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "DB_URL",
           "value" : "postgresql+asyncpg://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
+        },
+        {
+          "name" : "REDIS_URL",
+          "value" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/0"
         }
       ]
     }
@@ -93,14 +97,13 @@ resource "aws_ecs_service" "app_service" {
 
 
   network_configuration {
-    subnets          = [
+    subnets = [
       aws_default_subnet.default_subnet_a.id,
       aws_default_subnet.default_subnet_b.id
     ]
     assign_public_ip = true
     security_groups = [
       data.aws_security_group.default.id
-      # aws_security_group.this.id
     ]
   }
 }
