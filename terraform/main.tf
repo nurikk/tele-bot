@@ -4,29 +4,12 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-
-
 resource "aws_cloudwatch_log_group" "logs" {
   name = "/ecs/tele-bot-task"
 }
 
 
-locals {
-  env = [
-    {
-      "name" : "OPENAI_API_KEY",
-      "value" : var.OPENAI_API_KEY
-    },
-    {
-      "name" : "TELEGRAM_BOT_TOKEN",
-      "value" : var.TELEGRAM_BOT_TOKEN
-    },
-    {
-      "name" : "DB_URL",
-      "value" : "postgresql+asyncpg://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
-    }
-  ]
-}
+
 resource "aws_ecs_task_definition" "task" {
   family = "tele-bot-task"
   container_definitions = jsonencode([
@@ -44,7 +27,20 @@ resource "aws_ecs_task_definition" "task" {
           "awslogs-stream-prefix" : "ecs"
         }
       },
-      "environment" : local.env
+      "environment" : [
+        {
+          "name" : "OPENAI_API_KEY",
+          "value" : var.OPENAI_API_KEY
+        },
+        {
+          "name" : "TELEGRAM_BOT_TOKEN",
+          "value" : var.TELEGRAM_BOT_TOKEN
+        },
+        {
+          "name" : "DB_URL",
+          "value" : "postgresql+asyncpg://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
+        }
+      ]
     }
   ])
 
@@ -76,6 +72,13 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_default_subnet" "default_subnet_a" {
+  availability_zone = data.aws_availability_zones.available.names[0]
+}
+
+resource "aws_default_subnet" "default_subnet_b" {
+  availability_zone = data.aws_availability_zones.available.names[1]
+}
 
 
 
@@ -90,10 +93,14 @@ resource "aws_ecs_service" "app_service" {
 
 
   network_configuration {
-    subnets = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
+    subnets          = [
+      aws_default_subnet.default_subnet_a.id,
+      aws_default_subnet.default_subnet_b.id
+    ]
     assign_public_ip = true
     security_groups = [
-      aws_security_group.this.id
+      data.aws_security_group.default.id
+      # aws_security_group.this.id
     ]
   }
 }
