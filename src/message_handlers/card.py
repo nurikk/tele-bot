@@ -45,7 +45,7 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: U
                                                             generated_prompt=prompt,
                                                             language_code=locale)
     try:
-        img = (await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json")).data[0]  # Api only returns one image
+        img = (await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json", user=str(user.id))).data[0]  # Api only returns one image
 
         image = BufferedInputFile(file=base64.b64decode(img.b64_json), filename="card.png")  # TODO: save images to s3
         builder = InlineKeyboardBuilder()
