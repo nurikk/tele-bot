@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e09bee013ada6eaf0ced2ba81c920343cb33329648b4570656ed4a7b9cc3f43a"
+            "sha256": "497bd9df247132d62f44b44d5a7c918a722c25b5264546d78555d7f31194eb68"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -127,6 +127,7 @@
                 "sha256:95ee77b91c8d2808bd08a59fbebf66270e9090c3d92ffbf260dc0db0b979577d",
                 "sha256:edba222e03453e094a3ce605db1b970c4b3376264e56f32e2a4959f948d66a96"
             ],
+            "markers": "python_version >= '3.7'",
             "version": "==0.19.0"
         },
         "alembic": {
@@ -205,6 +206,7 @@
                 "sha256:f9ea3f24eb4c49a615573724d88a48bd1b7821c890c2effe04f05382ed9e8810",
                 "sha256:ff8e8109cd6a46ff852a5e6bab8b0a047d7ea42fcb7ca5ae6eaae97d8eacf397"
             ],
+            "markers": "python_version >= '3.8'",
             "version": "==0.29.0"
         },
         "attrs": {
@@ -593,11 +595,12 @@
                 "postgresql",
                 "sqlite"
             ],
+            "file": "https://codeload.github.com/encode/orm/zip/refs/heads/master",
             "hashes": [
                 "sha256:5b41cccdd55d50f90d207f9cb66a379e6d0fefbae434af7992fddea9aa74572a",
+                "sha256:8d503593988e2ca120ec440d31f67a9ef312c5812527b5c3621322332883c842",
                 "sha256:c29342006ecea111b7d3f4b77a96d5b658e495466050f4e98a5efc623aaada25"
             ],
-            "index": "pypi",
             "version": "==0.3.1"
         },
         "pydantic": {

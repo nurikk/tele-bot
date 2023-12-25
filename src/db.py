@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 import databases
@@ -11,7 +12,7 @@ models = orm.ModelRegistry(database=database)
 
 
 async def user_from_message(message: types.Message):
-    (user, is_new) = await User.objects.get_or_create(telegram_id=message.from_user.id, defaults={
+    (user, is_new) = await User.objects.update_or_create(telegram_id=message.from_user.id, defaults={
         "telegram_id": message.from_user.id,
         "full_name": message.from_user.full_name,
         "username": message.from_user.username
@@ -25,6 +26,8 @@ class User(orm.Model):
     registry = models
     fields = {
         "id": orm.Integer(primary_key=True),
+        "created_at": orm.DateTime(auto_now_add=True),
+        "last_seen": orm.DateTime(auto_now=True),
         "telegram_id": orm.BigInteger(unique=True, index=True),
         "full_name": orm.String(max_length=1000),
         "username": orm.String(max_length=1000),
