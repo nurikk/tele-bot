@@ -81,36 +81,12 @@ def get_samples(key: str, locale: str) -> list[str]:
     return i18n.t(f"card_form.{key}.samples", locale=locale).split(",")
 
 
-def generate_answer_samples_keyboard(locale: str, state_key: str) -> ReplyKeyboardMarkup:
+def generate_answer_samples_keyboard(locale: str, state_key: str, columns: int = 2) -> ReplyKeyboardMarkup:
     samples = get_samples(key=state_key, locale=locale)
     keyboard = []
-    for pair in zip(*[iter(samples)]*2):
+    for pair in zip(*[iter(samples)] * columns):
         keyboard.append([KeyboardButton(text=sample) for sample in pair])
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
-
-
-async def process_answer(user_response: str,
-                         state_key: str,
-                         state: FSMContext,
-                         answer: str | None,
-                         locale: str,
-                         next_state: State | None,
-                         bot: Bot,
-                         message: types.Message) -> None:
-    if state_key:
-        logging.info(f"Updating data for {state_key=} {user_response=}")
-        await state.update_data({state_key: user_response})
-    if answer:
-        samples_keyboard = generate_answer_samples_keyboard(locale=locale,
-                                                            state_key=state_key)
-        await message.answer(i18n.t(answer, locale=locale), reply_markup=samples_keyboard)
-    if next_state:
-        await state.set_state(next_state)
-    else:
-        data = await state.get_data()
-        await state.clear()
-        user = await user_from_message(user=message.from_user)
-        await finish(message=message, data=data, bot=bot, user=user, locale=locale)
 
 
 def register(dp: Dispatcher):
@@ -121,7 +97,7 @@ def register(dp: Dispatcher):
         locale = message.from_user.language_code
         await state.set_state(CardForm.reason)
         await message.answer(i18n.t("card_form.reason.response", locale=locale),
-                             reply_markup=generate_answer_samples_keyboard(locale=locale, state_key='reason'))
+                             reply_markup=generate_answer_samples_keyboard(locale=locale, state_key='reason', columns=1))
 
     @form_router.message(CardForm.reason)
     async def process_reason(message: types.Message, state: FSMContext) -> None:
