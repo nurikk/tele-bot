@@ -81,12 +81,34 @@ def get_samples(key: str, locale: str) -> list[str]:
     return i18n.t(f"card_form.{key}.samples", locale=locale).split(",")
 
 
-def generate_answer_samples_keyboard(locale: str, state_key: str, columns: int = 2) -> ReplyKeyboardMarkup:
-    samples = get_samples(key=state_key, locale=locale)
+def generate_samples_keyboard(samples: list[str], columns: int = 2) -> ReplyKeyboardMarkup:
     keyboard = []
     for pair in zip(*[iter(samples)] * columns):
         keyboard.append([KeyboardButton(text=sample) for sample in pair])
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
+
+def generate_answer_samples_keyboard(locale: str, state_key: str, columns: int = 2) -> ReplyKeyboardMarkup:
+    samples = get_samples(key=state_key, locale=locale)
+    return generate_samples_keyboard(samples=samples, columns=columns)
+
+
+async def generate_depictions_samples_keyboard(locale: str, reason: str, relationship: str, description: str) -> ReplyKeyboardMarkup:
+    prompt = i18n.t("card_form.depiction.depiction_prompt", locale=locale, reason=reason, relationship=relationship, description=description)
+    stream = await client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system",
+             "content": "You are a AI designed for postcard depiction ideas generation. You have to give five short funny ideas for a depiction. Don't add any details, just two short ideas. Don't add numerals or headings. Format output as a valid json array. Produce ideas in the same language as the prompt."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    samples = []
+    try:
+        samples = json.loads(stream.choices[0].message.content)
+    except json.decoder.JSONDecodeError:
+        pass
+    return generate_samples_keyboard(samples=samples, columns=1)
 
 
 def register(dp: Dispatcher):
@@ -119,7 +141,13 @@ def register(dp: Dispatcher):
         locale = message.from_user.language_code
         await state.update_data(description=message.text)
         await state.set_state(CardForm.depiction)
-        await message.answer(i18n.t("card_form.depiction.response", locale=locale))
+        data = await state.get_data()
+
+        await message.answer(i18n.t("card_form.depiction.coming_up_with_ideas", locale=locale), reply_markup=ReplyKeyboardRemove())
+        # query open ai for a depiction ideas
+        depiction_ideas = await generate_depictions_samples_keyboard(locale=locale, reason=data['reason'], relationship=data['relationship'],
+                                                                     description=data['description'])
+        await message.answer(i18n.t("card_form.depiction.response", locale=locale), reply_markup=depiction_ideas)
 
     @form_router.message(CardForm.depiction)
     async def process_depiction(message: types.Message, state: FSMContext) -> None:
@@ -145,7 +173,7 @@ def register(dp: Dispatcher):
     async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot):
         user = await user_from_message(user=query.from_user)
         request = await CardRequest.objects.get(id=callback_data.request_id)
-        await query.message.answer(i18n.t("card_form.wait", locale=request.language_code))
+        await query.message.answer(i18n.t("card_form.wait.response", locale=request.language_code))
         await finish(message=query.message, data=request.request, bot=bot, user=user, locale=request.language_code)
 
     dp.include_router(form_router)
