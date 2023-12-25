@@ -39,6 +39,7 @@ class CardRequest(orm.Model):
     registry = models
     fields = {
         "id": orm.Integer(primary_key=True),
+        "created_at": orm.DateTime(auto_now_add=True),
         "user": orm.ForeignKey(User),
         "request": orm.JSON(),
         "language_code": orm.String(max_length=5),
