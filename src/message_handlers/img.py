@@ -1,6 +1,6 @@
 from aiogram import types, Router, Dispatcher, Bot
 from aiogram.fsm.context import FSMContext
-from aiogram.types import  URLInputFile
+from aiogram.types import URLInputFile
 from aiogram.utils.markdown import hcode
 
 from src.commands import img_command

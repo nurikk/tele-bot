@@ -18,6 +18,7 @@ from src.message_handlers.img import register as register_img_handler
 
 
 async def main(dispatcher: Dispatcher) -> None:
+    # # I18nMiddleware() i18n
     await start()
 
     register_start_handler(dispatcher)

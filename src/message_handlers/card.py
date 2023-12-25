@@ -7,7 +7,8 @@ import i18n
 from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, CallbackQuery, InputFile
+from aiogram.fsm.state import State
+from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError
@@ -57,7 +58,6 @@ def generate_image_keyboad(locale: str, request: CardRequest) -> InlineKeyboardB
 
 
 async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: User, locale: str) -> None:
-
     prompt = generate_prompt(data=data, locale=locale)
     request: CardRequest = await CardRequest.objects.create(user=user,
                                                             request=data,
@@ -77,41 +77,93 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: U
         await message.reply(text=e.body['message'])
 
 
-def generate_message_handler(form_router: Router, start_command, key: str, next_state, answer: str):
-    @form_router.message(start_command)
-    async def handler(message: types.Message, state: FSMContext, bot: Bot) -> None:
+def get_samples(key: str, locale: str) -> list[str]:
+    return i18n.t(f"card_form.{key}.samples", locale=locale).split(",")
+
+
+def generate_answer_samples_keyboard(locale: str, state_key: str) -> ReplyKeyboardMarkup:
+    samples = get_samples(key=state_key, locale=locale)
+    keyboard = []
+    for pair in zip(*[iter(samples)]*2):
+        keyboard.append([KeyboardButton(text=sample) for sample in pair])
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
+
+async def process_answer(user_response: str,
+                         state_key: str,
+                         state: FSMContext,
+                         answer: str | None,
+                         locale: str,
+                         next_state: State | None,
+                         bot: Bot,
+                         message: types.Message) -> None:
+    if state_key:
+        logging.info(f"Updating data for {state_key=} {user_response=}")
+        await state.update_data({state_key: user_response})
+    if answer:
+        samples_keyboard = generate_answer_samples_keyboard(locale=locale,
+                                                            state_key=state_key)
+        await message.answer(i18n.t(answer, locale=locale), reply_markup=samples_keyboard)
+    if next_state:
+        await state.set_state(next_state)
+    else:
+        data = await state.get_data()
+        await state.clear()
         user = await user_from_message(user=message.from_user)
-        if key:
-            logging.info(f"Updating data for {key=} {message.text=}")
-            await state.update_data({key: message.text})
-        if answer:
-            await message.answer(i18n.t(answer, locale=message.from_user.language_code))
-        if next_state:
-            await state.set_state(next_state)
-        else:
-            data = await state.get_data()
-            await state.clear()
-            await finish(message=message, data=data, bot=bot, user=user, locale=message.from_user.language_code)
-
-
-commands = [
-    (card_command, CardForm.reason, None, "card_form.reason"),
-    (CardForm.reason, CardForm.relationship, "reason", "card_form.relationship"),
-    (CardForm.relationship, CardForm.description,
-     "relationship", "card_form.description"),
-    (CardForm.description, CardForm.depiction,
-     "description", "card_form.depiction"),
-    (CardForm.depiction, CardForm.style, "depiction", "card_form.style"),
-    (CardForm.style, None, "style", "card_form.wait")
-]
+        await finish(message=message, data=data, bot=bot, user=user, locale=locale)
 
 
 def register(dp: Dispatcher):
     form_router = Router()
 
-    for start_command, next_state, key, question in commands:
-        generate_message_handler(
-            form_router, start_command, key, next_state, question)
+    @form_router.message(card_command)
+    async def command_start(message: types.Message, state: FSMContext) -> None:
+        locale = message.from_user.language_code
+        await state.set_state(CardForm.reason)
+        await message.answer(i18n.t("card_form.reason.response", locale=locale),
+                             reply_markup=generate_answer_samples_keyboard(locale=locale, state_key='reason'))
+
+    @form_router.message(CardForm.reason)
+    async def process_reason(message: types.Message, state: FSMContext) -> None:
+        locale = message.from_user.language_code
+        await state.update_data(reason=message.text)
+        await state.set_state(CardForm.relationship)
+        await message.answer(i18n.t("card_form.relationship.response", locale=locale),
+                             reply_markup=generate_answer_samples_keyboard(locale=locale, state_key='relationship'))
+
+    @form_router.message(CardForm.relationship)
+    async def process_relationship(message: types.Message, state: FSMContext) -> None:
+        locale = message.from_user.language_code
+        await state.update_data(relationship=message.text)
+        await state.set_state(CardForm.description)
+        await message.answer(i18n.t("card_form.description.response", locale=locale), reply_markup=ReplyKeyboardRemove())
+
+    @form_router.message(CardForm.description)
+    async def process_description(message: types.Message, state: FSMContext) -> None:
+        locale = message.from_user.language_code
+        await state.update_data(description=message.text)
+        await state.set_state(CardForm.depiction)
+        await message.answer(i18n.t("card_form.depiction.response", locale=locale))
+
+    @form_router.message(CardForm.depiction)
+    async def process_depiction(message: types.Message, state: FSMContext) -> None:
+        locale = message.from_user.language_code
+        await state.update_data(depiction=message.text)
+        await state.set_state(CardForm.style)
+
+        await message.answer(i18n.t("card_form.style.response", locale=locale),
+                             reply_markup=generate_answer_samples_keyboard(locale=locale, state_key='style'))
+
+    @form_router.message(CardForm.style)
+    async def process_style(message: types.Message, state: FSMContext, bot: Bot) -> None:
+        locale = message.from_user.language_code
+        user = await user_from_message(user=message.from_user)
+        await state.update_data(style=message.text)
+        await state.set_state(CardForm.style)
+        await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
+        data = await state.get_data()
+        await state.clear()
+        await finish(message=message, data=data, bot=bot, user=user, locale=locale)
 
     @form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))
     async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot):
