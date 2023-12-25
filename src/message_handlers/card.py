@@ -66,7 +66,7 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: U
 def generate_message_handler(form_router: Router, start_command, key: str, next_state, answer: str):
     @form_router.message(start_command)
     async def handler(message: types.Message, state: FSMContext, bot: Bot) -> None:
-        user = await user_from_message(message=message)
+        user = await user_from_message(user=message.from_user)
         if key:
             logging.info(f"Updating data for {key=} {message.text=}")
             await state.update_data({key: message.text})
@@ -96,7 +96,7 @@ def register(dp: Dispatcher):
 
     @form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))
     async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot):
-        user = await user_from_message(message=query.message)
+        user = await user_from_message(user=query.from_user)
         request = await CardRequest.objects.get(id=callback_data.request_id)
         await query.message.answer(i18n.t("card_form.wait", locale=request.language_code))
         await finish(message=query.message, data=request.request, bot=bot, user=user, locale=request.language_code)

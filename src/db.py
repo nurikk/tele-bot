@@ -11,11 +11,11 @@ database = databases.Database(settings.db_url)
 models = orm.ModelRegistry(database=database)
 
 
-async def user_from_message(message: types.Message):
-    (user, is_new) = await User.objects.update_or_create(telegram_id=message.from_user.id, defaults={
-        "telegram_id": message.from_user.id,
-        "full_name": message.from_user.full_name,
-        "username": message.from_user.username
+async def user_from_message(user: types.User):
+    (user, is_new) = await User.objects.update_or_create(telegram_id=user.id, defaults={
+        "telegram_id": user.id,
+        "full_name": user.full_name,
+        "username": user.username
     })
     logging.info(f"User {user} is new: {is_new}")
     return user
