@@ -21,10 +21,13 @@ from src.settings import settings
 
 
 async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, image: BufferedInputFile, user: User):
-    await bot.send_message(chat_id=settings.debug_chat_id, text=f"New card for {hbold(user.full_name)} @{user.username}!")
-    await bot.send_message(chat_id=settings.debug_chat_id, text=f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}")
-    await bot.send_message(chat_id=settings.debug_chat_id, text=f"Generated prompt:\n {hcode(prompt)}")
-    await bot.send_message(chat_id=settings.debug_chat_id, text=f"Revised prompt:\n {hcode(revised_prompt)}")
+    messages = [
+        f"New card for {hbold(user.full_name)} @{user.username}!",
+        f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
+        f"Generated prompt:\n {hcode(prompt)}",
+        f"Revised prompt:\n {hcode(revised_prompt)}"
+    ]
+    await bot.send_message(chat_id=settings.debug_chat_id, text="\n".join(messages))
     await bot.send_photo(chat_id=settings.debug_chat_id, photo=image)
 
 
