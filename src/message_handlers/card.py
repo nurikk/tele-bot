@@ -20,8 +20,8 @@ from src.prompt_generator import generate_prompt
 from src.settings import settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, message: types.Message, prompt: str, revised_prompt: str, image: BufferedInputFile):
-    await bot.send_message(chat_id=settings.debug_chat_id, text=f"New card for {hbold(message.from_user.full_name)} @{message.from_user.username}!")
+async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, image: BufferedInputFile, user: User):
+    await bot.send_message(chat_id=settings.debug_chat_id, text=f"New card for {hbold(user.full_name)} @{user.username}!")
     await bot.send_message(chat_id=settings.debug_chat_id, text=f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}")
     await bot.send_message(chat_id=settings.debug_chat_id, text=f"Generated prompt:\n {hcode(prompt)}")
     await bot.send_message(chat_id=settings.debug_chat_id, text=f"Revised prompt:\n {hcode(revised_prompt)}")
@@ -58,7 +58,7 @@ async def finish(message: types.Message, data: dict[str, any], bot: Bot, user: U
         await bot.send_message(chat_id=message.chat.id, text=i18n.t('commands.card', locale=locale))
 
         await request.update(revised_prompt=img.revised_prompt)
-        await debug_log(prompt_data=data, bot=bot, message=message, prompt=prompt, revised_prompt=img.revised_prompt, image=image)
+        await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=img.revised_prompt, image=image, user=user)
     except BadRequestError as e:
         await message.reply(text=e.body['message'])
 
