@@ -13,7 +13,7 @@ card_form:
     response: "Describe the person being congratulated. (Ex: my friend is tall and blond with long hair)"
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
-    response: "What would you like to depict on a postcard? (Ex: him riding a dragon and flying over the moon)"
+    response: "What would you like to depict on a postcard?"
     depiction_prompt: "I'm drawing a postcard for my %{relationship} to celebrate %{reason}. This person is %{description}. What can I draw?"
   style:
     response: "Choose the postcard style."
