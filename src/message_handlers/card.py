@@ -113,10 +113,13 @@ async def generate_depictions_samples_keyboard(locale: str, reason: str, relatio
 
 
 async def generate_descriptions_samples_keyboard(user: User, locale: str) -> MutableTelegramObject:
-    requests = await CardRequest.objects.filter(user=user).filter(language_code=locale).order_by("-created_at").limit(5).all()
+    # Refactor this to make DISTINCT ON query
+    requests = await CardRequest.objects.filter(user=user).filter(language_code=locale).order_by("-created_at").limit(100).all()
     descriptions = [request.request['description'] for request in requests]
+    # Remove duplicates from descriptions keep first occurrence
+    descriptions = list(dict.fromkeys(descriptions))
     if descriptions:
-        return generate_samples_keyboard(samples=descriptions, columns=1)
+        return generate_samples_keyboard(samples=descriptions[:5], columns=1)
     return ReplyKeyboardRemove()
 
 
