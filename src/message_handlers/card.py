@@ -9,6 +9,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types.base import MutableTelegramObject
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError
@@ -111,6 +112,14 @@ async def generate_depictions_samples_keyboard(locale: str, reason: str, relatio
     return generate_samples_keyboard(samples=samples, columns=1)
 
 
+async def generate_descriptions_samples_keyboard(user: User, locale: str) -> MutableTelegramObject:
+    requests = await CardRequest.objects.filter(user=user).filter(language_code=locale).order_by("-created_at").limit(5).all()
+    descriptions = [request.request['description'] for request in requests]
+    if descriptions:
+        return generate_samples_keyboard(samples=descriptions, columns=1)
+    return ReplyKeyboardRemove()
+
+
 def register(dp: Dispatcher):
     form_router = Router()
 
@@ -132,9 +141,13 @@ def register(dp: Dispatcher):
     @form_router.message(CardForm.relationship)
     async def process_relationship(message: types.Message, state: FSMContext) -> None:
         locale = message.from_user.language_code
+        user = await user_from_message(user=message.from_user)
+
         await state.update_data(relationship=message.text)
         await state.set_state(CardForm.description)
-        await message.answer(i18n.t("card_form.description.response", locale=locale), reply_markup=ReplyKeyboardRemove())
+
+        description_ideas = await generate_descriptions_samples_keyboard(user=user, locale=locale)
+        await message.answer(i18n.t("card_form.description.response", locale=locale), reply_markup=description_ideas)
 
     @form_router.message(CardForm.description)
     async def process_description(message: types.Message, state: FSMContext) -> None:
