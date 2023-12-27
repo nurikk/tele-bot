@@ -4,7 +4,7 @@ from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
 from src.commands import start_command
-from src.db import TelebotUsers, user_from_message
+from src.db import user_from_message
 
 
 def register(dp: Dispatcher):

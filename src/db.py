@@ -1,3 +1,4 @@
+import datetime
 import logging
 from enum import Enum
 
@@ -20,12 +21,12 @@ async def user_from_message(telegram_user: types.User):
 
 
 class TelebotUsers(Model):
-    id = fields.IntField(pk=True)
-    created_at = fields.DatetimeField(auto_now_add=True)
-    last_seen = fields.DatetimeField(auto_now=True)
-    telegram_id = fields.BigIntField(unique=True, index=True)
-    full_name = fields.TextField(null=True)
-    username = fields.TextField()
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+    last_seen: datetime.datetime = fields.DatetimeField(auto_now=True)
+    telegram_id: int = fields.BigIntField(unique=True, index=True)
+    full_name: str = fields.TextField(null=True)
+    username: str = fields.TextField()
 
 
 class CardRequestQuestions(str, Enum):
@@ -37,20 +38,20 @@ class CardRequestQuestions(str, Enum):
 
 
 class CardRequests(Model):
-    id = fields.IntField(pk=True)
-    created_at = fields.DatetimeField(auto_now_add=True)
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
     user = fields.ForeignKeyField("models.TelebotUsers", related_name="requests", index=True)
-    generated_prompt = fields.TextField(null=True)
-    revised_prompt = fields.TextField(null=True)
+    generated_prompt: str = fields.TextField(null=True)
+    revised_prompt: str = fields.TextField(null=True)
 
 
 class CardRequestsAnswers(Model):
-    id = fields.IntField(pk=True)
-    created_at = fields.DatetimeField(auto_now_add=True)
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
     request = fields.ForeignKeyField("models.CardRequests", related_name="answers", index=True)
-    language_code = fields.TextField()
+    language_code: str = fields.TextField()
     question = fields.CharEnumField(CardRequestQuestions, index=True)
-    answer = fields.TextField()
+    answer: str = fields.TextField()
 
 
 TORTOISE_ORM = {

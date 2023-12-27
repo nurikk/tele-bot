@@ -10,7 +10,7 @@ from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyb
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError
-from tortoise.functions import Count, Min
+from tortoise.functions import Min
 
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
@@ -73,7 +73,8 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
         await debug_log(prompt_data=data, bot=bot, prompt=prompt,
                         revised_prompt=revised_prompt, image=image, user=user)
     except BadRequestError as e:
-        await bot.send_message(chat_id=chat_id, text=e.body['message'])
+        if isinstance(e.body, dict) and 'message' in e.body:
+            await bot.send_message(chat_id=chat_id, text=e.body['message'])
 
 
 def get_samples(question: CardRequestQuestions, locale: str) -> list[str]:
