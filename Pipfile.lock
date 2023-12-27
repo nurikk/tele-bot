@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d6fd302983b4727a0c3b6d1bbf38133b86739c7ab806505582d7e1cc0fa690e5"
+            "sha256": "14fdee4d13cbf419cd481cf2dfa82da8c7fa04bc2cd348a26c88813fa8b4748e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,11 +17,12 @@
     },
     "default": {
         "aerich": {
+            "file": "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev",
             "hashes": [
                 "sha256:31d67de7b96184636b89de99062e059e5e6204b6251d24c33eb21fc9cf982e09",
-                "sha256:84c78c07d45436b89ca4db5411eca4e9292a591fb7d6fd4282fa4a7d0c6d2af1"
+                "sha256:84c78c07d45436b89ca4db5411eca4e9292a591fb7d6fd4282fa4a7d0c6d2af1",
+                "sha256:b45a96ede3de3cdd626f93f2868c5f53315b08b43867c28d6518e7d1ef169ef9"
             ],
-            "index": "pypi",
             "version": "==0.7.2"
         },
         "aiofiles": {

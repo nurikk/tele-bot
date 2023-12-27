@@ -53,10 +53,16 @@ class CardRequestsAnswers(Model):
     answer = fields.TextField()
 
 
+TORTOISE_ORM = {
+    "connections": {"default": settings.db_url},
+    "apps": {
+        "models": {
+            "models": ["src.db", "aerich.models"],
+            "default_connection": "default",
+        },
+    },
+}
+
+
 async def start():
-    await Tortoise.init(
-        db_url=settings.db_url,
-        modules={'models': ['src.db']},
-        use_tz=True
-    )
-    await Tortoise.generate_schemas()
+    await Tortoise.init(config=TORTOISE_ORM, use_tz=True)
