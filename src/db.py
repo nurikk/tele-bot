@@ -1,55 +1,69 @@
 import datetime
 import logging
+from enum import Enum
 
-import databases
-import orm
 from aiogram import types
 
 from src.settings import settings
 
-database = databases.Database(settings.db_url)
-models = orm.ModelRegistry(database=database)
+from tortoise.models import Model
+from tortoise import fields, Tortoise
 
 
-async def user_from_message(user: types.User):
-    (user, is_new) = await User.objects.update_or_create(telegram_id=user.id, defaults={
-        "telegram_id": user.id,
-        "full_name": user.full_name,
-        "username": user.username
-    })
-    logging.info(f"User {user} is new: {is_new}")
+async def user_from_message(telegram_user: types.User):
+    user_props = {
+        "full_name": telegram_user.full_name,
+        "username": telegram_user.username
+    }
+    (user, is_new) = await TelebotUsers.update_or_create(telegram_id=telegram_user.id, defaults=user_props)
+    logging.info(f"User {user.full_name} {'created' if is_new else 'updated'}")
     return user
 
 
-class User(orm.Model):
-    tablename = "users"
-    registry = models
-    fields = {
-        "id": orm.Integer(primary_key=True),
-        "created_at": orm.DateTime(auto_now_add=True),
-        "last_seen": orm.DateTime(auto_now=True),
-        "telegram_id": orm.BigInteger(unique=True, index=True),
-        "full_name": orm.String(max_length=1000),
-        "username": orm.String(max_length=1000),
-    }
+class TelebotUsers(Model):
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+    last_seen: datetime.datetime = fields.DatetimeField(auto_now=True)
+    telegram_id: int = fields.BigIntField(unique=True, index=True)
+    full_name: str = fields.TextField(null=True)
+    username: str = fields.TextField()
 
 
-class CardRequest(orm.Model):
-    tablename = "card_requests"
-    registry = models
-    fields = {
-        "id": orm.Integer(primary_key=True),
-        "created_at": orm.DateTime(auto_now_add=True),
-        "user": orm.ForeignKey(User),
-        "request": orm.JSON(),
-        "language_code": orm.String(max_length=5),
-        "generated_prompt": orm.String(max_length=100000),
-        "revised_prompt": orm.String(max_length=100000, allow_null=True),
-    }
+class CardRequestQuestions(str, Enum):
+    REASON = "reason"
+    RELATIONSHIP = "relationship"
+    DESCRIPTION = "description"
+    DEPICTION = "depiction"
+    STYLE = "style"
 
 
-metadata = models.metadata
+class CardRequests(Model):
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+    user = fields.ForeignKeyField("models.TelebotUsers", related_name="requests", index=True)
+    generated_prompt: str = fields.TextField(null=True)
+    revised_prompt: str = fields.TextField(null=True)
+
+
+class CardRequestsAnswers(Model):
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+    request = fields.ForeignKeyField("models.CardRequests", related_name="answers", index=True)
+    language_code: str = fields.TextField()
+    question = fields.CharEnumField(CardRequestQuestions, index=True)
+    answer: str = fields.TextField()
+
+
+TORTOISE_ORM = {
+    "connections": {"default": settings.db_url},
+    "apps": {
+        "models": {
+            "models": ["src.db", "aerich.models"],
+            "default_connection": "default",
+        },
+    },
+}
 
 
 async def start():
-    await database.connect()
+    await Tortoise.init(config=TORTOISE_ORM, use_tz=True)
