@@ -38,7 +38,7 @@ resource "aws_ecs_task_definition" "task" {
         },
         {
           "name" : "DB_URL",
-          "value" : "postgresql://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
+          "value" : "postgres://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
         },
         {
           "name" : "REDIS_URL",
