@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
- alembic upgrade head
+ aerich upgrade
  python -m src.main
