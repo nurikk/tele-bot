@@ -10,6 +10,6 @@ COPY Pipfile.lock .
 RUN pipenv install --system --deploy --dev
 COPY ./src ./src
 COPY ./entrypoint.sh ./
-COPY ./alembic.ini ./
-COPY ./alembic ./alembic
+COPY ./pyproject.toml ./
+COPY ./migrations ./migrations
 CMD ["./entrypoint.sh"]
