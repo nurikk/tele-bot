@@ -10,7 +10,7 @@ from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyb
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError
-from tortoise.functions import Min
+from tortoise.functions import Max
 
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
@@ -126,7 +126,7 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
     answers = await CardRequests.filter(user=user,
                                         answers__language_code=locale,
                                         answers__question=CardRequestQuestions.DESCRIPTION
-                                        ).annotate(min_created_at=Min('created_at')).order_by("-min_created_at").group_by('answers__answer').limit(samples_count).values("answers__answer")
+                                        ).annotate(min_created_at=Max('created_at')).order_by("-min_created_at").group_by('answers__answer').limit(samples_count).values("answers__answer")
 
     descriptions = [answer['answers__answer'] for answer in answers]
     if descriptions:
