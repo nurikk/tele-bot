@@ -8,11 +8,9 @@ aiogram = "3.2.0"
 openai = "1.6.0"
 pydantic-settings = "2.1.0"
 python-i18n = { extras = ["YAML"], version = "0.3.9" }
-greenlet = "3.0.3"
-alembic = "1.13.1"
-
 redis= "5.0.1"
-orm = {extras = ["postgresql", "sqlite"], file = "https://codeload.github.com/encode/orm/zip/refs/heads/master"}
+tortoise-orm = { extras = ["asyncpg"], version = "0.20.0" }
+aerich = "0.7.2"
 
 [dev-packages]
 pytest = "*"

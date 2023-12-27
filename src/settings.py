@@ -4,7 +4,7 @@ from pydantic_settings import SettingsConfigDict
 
 class Settings(pydantic_settings.BaseSettings):
     debug_chat_id: int = -4028365371
-    db_url: str = 'postgresql+asyncpg://localhost:5432/telebot'
+    db_url: str = 'postgres://localhost:5432/telebot2'
     redis_url: str = 'redis://localhost:6379/0'
     redis_ttl_days: int = 1
 
