@@ -1,7 +1,7 @@
 import base64
 import datetime
 import json
-import random
+import logging
 from enum import Enum
 
 import i18n
@@ -254,29 +254,33 @@ async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
-    photo_url = 'https://placehold.co/1023x1023/800080/FFF/JPG?text=Invite+your+friend+to+generate+your+own+card'
-
+    results = []
+    request_qs = CardRequests.filter(result_image__isnull=False)
     if request_id:
-        request = await CardRequests.filter(id=request_id).first().prefetch_related('user')
-        if request and request.user.id == user.id and request.result_image:
-            photo_url = f"{settings.s3_website_prefix}/{request.result_image}"
+        request_qs = request_qs.filter(id=request_id, user=user)
+    requests = await request_qs.limit(5)
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
         ]]
     )
-    photo = types.InlineQueryResultPhoto(
-        id=str(datetime.datetime.now()),
-        photo_url=photo_url,
-        photo_width=1024,
-        photo_height=1024,
-        title="Title",
-        caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
-        description="Description",
-        thumbnail_url='https://placehold.co/100x100/800080/FFF/JPG?text=Invite',
-        reply_markup=reply_markup,
-    )
-    await query.answer(results=[photo], cache_time=0)
+    for request in requests:
+        photo_url = f"{settings.image_website_prefix}/{request.result_image}"
+        thumbnail_url = f"{settings.image_thumbnail_website_prefix}/{request.result_image}"
+        logging.info(f"{photo_url=} {thumbnail_url=}")
+        results.append(types.InlineQueryResultPhoto(
+            id=str(datetime.datetime.now()),
+            photo_url=photo_url,
+            photo_width=1024,
+            photo_height=1024,
+            title="Title",
+            caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
+            description="Description",
+            thumbnail_url=thumbnail_url,
+            reply_markup=reply_markup,
+        ))
+
+    await query.answer(results=results, cache_time=0)
 
 
 async def chosen_inline_result_handler(chosen_inline_result: types.ChosenInlineResult):

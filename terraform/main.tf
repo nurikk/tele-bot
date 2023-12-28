@@ -62,8 +62,12 @@ resource "aws_ecs_task_definition" "task" {
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
         },
         {
-          "name" : "S3_WEBSITE_PREFIX",
-          "value" : "http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
+          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/500x500/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
+        },
+        {
+          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/full/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
         }
       ]
     }
