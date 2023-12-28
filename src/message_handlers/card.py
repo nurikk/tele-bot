@@ -144,22 +144,22 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
 async def handle_no_more_cards(message: types.Message):
     locale = message.from_user.language_code
     await message.answer(i18n.t("card_form.no_cards_left", locale=locale))
-
-    kb = [[
-        InlineKeyboardButton(
-            text="Выбрать ссылку",
-            switch_inline_query_current_chat="links"
-        )
-    ], [
-        InlineKeyboardButton(
-            text="Выбрать изображение",
-            switch_inline_query_current_chat="images"
-        )
-    ]]
-    await message.answer(
-        text="Выберите, что хотите удалить:",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
-    )
+    #
+    # kb = [[
+    #     InlineKeyboardButton(
+    #         text="Выбрать ссылку",
+    #         switch_inline_query_current_chat="links"
+    #     )
+    # ], [
+    #     InlineKeyboardButton(
+    #         text="Выбрать изображение",
+    #         switch_inline_query_current_chat="images"
+    #     )
+    # ]]
+    # await message.answer(
+    #     text="Выберите, что хотите удалить:",
+    #     reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+    # )
 
 
 async def command_start(message: types.Message, state: FSMContext) -> None:
