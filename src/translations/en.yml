@@ -1,9 +1,9 @@
 first_message: 'Hello %{name}!'
-regenerate: 'Regenerate'
+regenerate: 'Redraw'
 invite_friend: 'Invite a friend'
 no_cards_left: "No more cards left"
 share_with_friend: "Share with friend"
-generate_your_own: "🎁 New Postcard 🎁"
+generate_your_own: "New Postcard 🎁"
 shared_from: "%{name} shared a postcard with you!"
 commands:
   card: "Use /card to create new card."
