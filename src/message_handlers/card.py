@@ -8,6 +8,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
     InlineKeyboardMarkup
+from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
@@ -65,18 +66,19 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
     await CardRequests.filter(id=request_id).update(generated_prompt=prompt)
 
     try:
-        image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
-        keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
+        async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
+            image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
+            keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
 
-        await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
+            await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
 
-        await bot.send_photo(chat_id=chat_id, photo=image, reply_markup=keyboard.as_markup())
+            await bot.send_photo(chat_id=chat_id, photo=image, reply_markup=keyboard.as_markup())
 
-        await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
+            await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
 
-        await CardRequests.filter(id=request_id).update(revised_prompt=revised_prompt)
-        await debug_log(prompt_data=data, bot=bot, prompt=prompt,
-                        revised_prompt=revised_prompt, image=image, user=user)
+            await CardRequests.filter(id=request_id).update(revised_prompt=revised_prompt)
+            await debug_log(prompt_data=data, bot=bot, prompt=prompt,
+                            revised_prompt=revised_prompt, image=image, user=user)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
             await bot.send_message(chat_id=chat_id, text=e.body['message'])
@@ -184,15 +186,16 @@ async def process_reason(message: types.Message, state: FSMContext) -> None:
     await message.answer(i18n.t("card_form.relationship.response", locale=locale), reply_markup=answer_samples_keyboard)
 
 
-async def process_description(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI) -> None:
+async def process_description(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI, bot: Bot) -> None:
     locale = message.from_user.language_code
     request_id = (await state.get_data())['request_id']
     await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.DESCRIPTION, answer=message.text, language_code=locale)
     await state.set_state(CardForm.depiction)
 
     await message.answer(i18n.t("card_form.depiction.coming_up_with_ideas", locale=locale), reply_markup=ReplyKeyboardRemove())
-    depiction_ideas = await generate_depictions_samples_keyboard(locale=locale, request_id=request_id, client=async_openai_client)
-    await message.answer(i18n.t("card_form.depiction.response", locale=locale), reply_markup=depiction_ideas)
+    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
+        depiction_ideas = await generate_depictions_samples_keyboard(locale=locale, request_id=request_id, client=async_openai_client)
+        await message.answer(i18n.t("card_form.depiction.response", locale=locale), reply_markup=depiction_ideas)
 
 
 async def process_depiction(message: types.Message, state: FSMContext) -> None:
