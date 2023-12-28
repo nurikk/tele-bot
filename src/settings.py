@@ -18,6 +18,7 @@ class Settings(pydantic_settings.BaseSettings):
     aws_secret_access_key: str = ''
     s3_bucket_name: str = ''
     aws_region: str = ''
+    s3_website_prefix: str = ''
 
 
 settings = Settings()

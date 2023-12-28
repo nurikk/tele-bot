@@ -1,5 +1,7 @@
 import base64
+import datetime
 import json
+import random
 from enum import Enum
 
 import i18n
@@ -55,9 +57,13 @@ async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> Imag
 def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     button_label = i18n.t('regenerate', locale=locale)
-    callback_data = CardGenerationCallback(
-        action=Action.ACTION_REGENERATE, request_id=request_id).pack()
+    callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
     builder.button(text=button_label, callback_data=callback_data)
+
+    builder.add(InlineKeyboardButton(
+        text=i18n.t("share_with_friend", locale=locale),
+        switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True, query=str(request_id))
+    ))
     return builder
 
 
@@ -161,12 +167,18 @@ async def handle_no_more_cards(message: types.Message):
     )
 
 
-async def command_start(message: types.Message, state: FSMContext) -> None:
-    locale = message.from_user.language_code
+async def ensure_user_has_cards(message: types.Message):
     user = await user_from_message(telegram_user=message.from_user)
     if user.remaining_cards <= 0:
         await handle_no_more_cards(message=message)
-    else:
+        return False
+    return True
+
+
+async def command_start(message: types.Message, state: FSMContext) -> None:
+    locale = message.from_user.language_code
+    user = await user_from_message(telegram_user=message.from_user)
+    if await ensure_user_has_cards(message=message):
         request: CardRequests = await CardRequests.create(user=user, language_code=locale)
         await state.update_data(request_id=request.id)
         await state.set_state(CardForm.reason)
@@ -230,32 +242,41 @@ async def process_relationship(message: types.Message, state: FSMContext) -> Non
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot, async_openai_client: AsyncOpenAI):
-    user = await user_from_message(telegram_user=query.from_user)
-    locale = query.from_user.language_code
-    await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
-    await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                 client=async_openai_client)
+    if await ensure_user_has_cards(message=query.message):
+        user = await user_from_message(telegram_user=query.from_user)
+        locale = query.from_user.language_code
+        await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
+        await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
+                     client=async_openai_client)
 
 
 async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
+    request_id = query.query
+    photo_url = 'https://placehold.co/1023x1023/800080/FFF/JPG?text=Invite+your+friend+to+generate+your+own+card'
 
-    join = InlineKeyboardButton(
-        text="Generate my own card",
-        url=link
+    if request_id:
+        request = await CardRequests.filter(id=request_id).first().prefetch_related('user')
+        if request and request.user.id == user.id and request.result_image:
+            photo_url = f"{settings.s3_website_prefix}/{request.result_image}"
+    reply_markup = InlineKeyboardMarkup(
+        inline_keyboard=[[
+            InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
+        ]]
     )
-    photo = types.InlineQueryResultPhoto(id='foo',
-                                         photo_url='https://placehold.co/600x400/800080/FFF/JPG?text=Invite+your+friend+to+generate+your+own+card',
-                                         photo_width=600,
-                                         photo_height=400,
-                                         thumbnail_url='https://placehold.co/100x100/800080/FFF/JPG?text=Invite',
-                                         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[join]])
-                                         )
-    await query.answer(
-        results=[photo],
-        cache_time=0
+    photo = types.InlineQueryResultPhoto(
+        id=str(datetime.datetime.now()),
+        photo_url=photo_url,
+        photo_width=1024,
+        photo_height=1024,
+        title="Title",
+        caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
+        description="Description",
+        thumbnail_url='https://placehold.co/100x100/800080/FFF/JPG?text=Invite',
+        reply_markup=reply_markup,
     )
+    await query.answer(results=[photo], cache_time=0)
 
 
 async def chosen_inline_result_handler(chosen_inline_result: types.ChosenInlineResult):

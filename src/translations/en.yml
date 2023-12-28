@@ -2,6 +2,9 @@ first_message: 'Hello %{name}!'
 regenerate: 'Regenerate'
 invite_friend: 'Invite a friend'
 no_cards_left: "No more cards left."
+share_with_friend: "Share with friend"
+generate_your_own: "Generate your own"
+shared_from: "%{name} shared a postcard with you!"
 commands:
   card: "Use /card to generate new card."
 card_form:
