@@ -21,6 +21,6 @@ async def handle_new_user(message: types.Message, referred_by: int = None):
 def register(dp: Dispatcher):
     @dp.message(start_command)
     @dp.message(start_referral_command)
-    async def referral(message: Message, command: CommandObject) -> None:
+    async def start_command_handler(message: Message, command: CommandObject) -> None:
         referred_by = command.args
         await handle_new_user(message=message, referred_by=int(referred_by) if referred_by else None)
