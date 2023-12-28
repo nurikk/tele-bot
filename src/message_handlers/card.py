@@ -7,9 +7,9 @@ from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup, KeyboardButtonRequestUser, KeyboardButtonRequestChat, SwitchInlineQueryChosenChat
 from aiogram.utils.chat_action import ChatActionSender
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
 from tortoise.expressions import F as F_SQL
@@ -145,23 +145,17 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
 
 async def handle_no_more_cards(message: types.Message):
     locale = message.from_user.language_code
-    await message.answer(i18n.t("card_form.no_cards_left", locale=locale))
-    #
-    # kb = [[
-    #     InlineKeyboardButton(
-    #         text="Выбрать ссылку",
-    #         switch_inline_query_current_chat="links"
-    #     )
-    # ], [
-    #     InlineKeyboardButton(
-    #         text="Выбрать изображение",
-    #         switch_inline_query_current_chat="images"
-    #     )
-    # ]]
-    # await message.answer(
-    #     text="Выберите, что хотите удалить:",
-    #     reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
-    # )
+
+    kb = [[
+        InlineKeyboardButton(
+            text="Share",
+            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True, query="I need a card")
+        )
+    ]]
+    await message.answer(
+        i18n.t("card_form.no_cards_left", locale=locale),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+    )
 
 
 async def command_start(message: types.Message, state: FSMContext) -> None:
