@@ -7,6 +7,7 @@ class Settings(pydantic_settings.BaseSettings):
     db_url: str = 'postgres://localhost:5432/telebot2'
     redis_url: str = 'redis://localhost:6379/0'
     redis_ttl_days: int = 1
+    cards_per_user: int = 5
 
     openai_api_key: str = ''  # Bot token can be obtained via https://t.me/BotFather
     telegram_bot_token: str = ''

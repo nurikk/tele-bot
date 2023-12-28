@@ -9,13 +9,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
-from openai import BadRequestError
+from openai import BadRequestError, AsyncOpenAI
+from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
 
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
 from src.fsm.card import CardForm
-from src.oai import client
+
 from src.prompt_generator import generate_prompt
 from src.settings import settings
 
@@ -40,7 +41,7 @@ class CardGenerationCallback(CallbackData, prefix="my"):
     request_id: int
 
 
-async def generate_image(prompt: str, user_id: str) -> (InputFile, str):
+async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> (InputFile, str):
     response = await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json", user=user_id)
     img = response.data[0]  # Api only returns one image
     # TODO: save images to s3
@@ -56,15 +57,18 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return builder
 
 
-async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str) -> None:
+async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI) -> None:
     answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
     prompt = generate_prompt(data=data, locale=locale)
     await CardRequests.filter(id=request_id).update(generated_prompt=prompt)
 
     try:
-        image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id))
+        image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
         keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
+
+        await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
+
         await bot.send_photo(chat_id=chat_id, photo=image, reply_markup=keyboard.as_markup())
 
         await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
@@ -93,10 +97,11 @@ def generate_answer_samples_keyboard(locale: str, question: CardRequestQuestions
     return generate_samples_keyboard(samples=samples, columns=columns)
 
 
-async def generate_depictions_samples_keyboard(locale: str, request_id: int) -> ReplyKeyboardMarkup:
+async def generate_depictions_samples_keyboard(client: AsyncOpenAI, locale: str, request_id: int) -> ReplyKeyboardMarkup:
     answers = await CardRequests.filter(id=request_id,
                                         answers__language_code=locale,
-                                        answers__question__in=[CardRequestQuestions.DESCRIPTION, CardRequestQuestions.REASON, CardRequestQuestions.RELATIONSHIP]
+                                        answers__question__in=[CardRequestQuestions.DESCRIPTION, CardRequestQuestions.REASON,
+                                                               CardRequestQuestions.RELATIONSHIP]
                                         ).values('answers__question', 'answers__answer')
 
     answers_dict = {item['answers__question']: item['answers__answer'] for item in answers}
@@ -126,7 +131,8 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
     answers = await CardRequests.filter(user=user,
                                         answers__language_code=locale,
                                         answers__question=CardRequestQuestions.DESCRIPTION
-                                        ).annotate(min_created_at=Max('created_at')).order_by("-min_created_at").group_by('answers__answer').limit(samples_count).values("answers__answer")
+                                        ).annotate(min_created_at=Max('created_at')).order_by("-min_created_at").group_by('answers__answer').limit(
+        samples_count).values("answers__answer")
 
     descriptions = [answer['answers__answer'] for answer in answers]
     if descriptions:
@@ -134,76 +140,84 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
     return ReplyKeyboardRemove()
 
 
+async def command_start(message: types.Message, state: FSMContext) -> None:
+    locale = message.from_user.language_code
+    user = await user_from_message(telegram_user=message.from_user)
+    request: CardRequests = await CardRequests.create(user=user, language_code=locale)
+    await state.update_data(request_id=request.id)
+    await state.set_state(CardForm.reason)
+    answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.REASON, columns=1)
+    await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=answer_samples_keyboard)
+
+
+async def process_reason(message: types.Message, state: FSMContext) -> None:
+    locale = message.from_user.language_code
+    request_id = (await state.get_data())['request_id']
+    await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.REASON, answer=message.text, language_code=locale)
+    await state.set_state(CardForm.relationship)
+    answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.RELATIONSHIP)
+    await message.answer(i18n.t("card_form.relationship.response", locale=locale), reply_markup=answer_samples_keyboard)
+
+
+async def process_description(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI) -> None:
+    locale = message.from_user.language_code
+    request_id = (await state.get_data())['request_id']
+    await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.DESCRIPTION, answer=message.text, language_code=locale)
+    await state.set_state(CardForm.depiction)
+
+    await message.answer(i18n.t("card_form.depiction.coming_up_with_ideas", locale=locale), reply_markup=ReplyKeyboardRemove())
+    depiction_ideas = await generate_depictions_samples_keyboard(locale=locale, request_id=request_id, client=async_openai_client)
+    await message.answer(i18n.t("card_form.depiction.response", locale=locale), reply_markup=depiction_ideas)
+
+
+async def process_depiction(message: types.Message, state: FSMContext) -> None:
+    locale = message.from_user.language_code
+    request_id = (await state.get_data())['request_id']
+    await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.DEPICTION, answer=message.text, language_code=locale)
+    await state.set_state(CardForm.style)
+
+    await message.answer(i18n.t("card_form.style.response", locale=locale),
+                         reply_markup=generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.STYLE))
+
+
+async def process_style(message: types.Message, state: FSMContext, bot: Bot, async_openai_client: AsyncOpenAI) -> None:
+    locale = message.from_user.language_code
+    user = await user_from_message(telegram_user=message.from_user)
+    request_id = (await state.get_data())['request_id']
+    await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.STYLE, answer=message.text, language_code=locale)
+    await state.set_state(CardForm.style)
+    await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
+    await state.clear()
+    await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale, client=async_openai_client)
+
+
+async def process_relationship(message: types.Message, state: FSMContext) -> None:
+    locale = message.from_user.language_code
+    request_id = (await state.get_data())['request_id']
+    await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.RELATIONSHIP, answer=message.text, language_code=locale)
+    user = await user_from_message(telegram_user=message.from_user)
+    await state.set_state(CardForm.description)
+
+    description_ideas = await generate_descriptions_samples_keyboard(user=user, locale=locale)
+    await message.answer(i18n.t("card_form.description.response", locale=locale), reply_markup=description_ideas)
+
+
+async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot, async_openai_client: AsyncOpenAI):
+    user = await user_from_message(telegram_user=query.from_user)
+    locale = query.from_user.language_code
+    await query.message.answer(i18n.t("card_form.wait.response", locale=locale))
+    await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
+                 client=async_openai_client)
+
+
 def register(dp: Dispatcher):
     form_router = Router()
-
-    @form_router.message(card_command)
-    async def command_start(message: types.Message, state: FSMContext) -> None:
-        locale = message.from_user.language_code
-        user = await user_from_message(telegram_user=message.from_user)
-        request: CardRequests = await CardRequests.create(user=user, language_code=locale)
-        await state.update_data(request_id=request.id)
-        await state.set_state(CardForm.reason)
-        await message.answer(i18n.t("card_form.reason.response", locale=locale),
-                             reply_markup=generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.REASON, columns=1))
-
-    @form_router.message(CardForm.reason)
-    async def process_reason(message: types.Message, state: FSMContext) -> None:
-        locale = message.from_user.language_code
-        request_id = (await state.get_data())['request_id']
-        await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.REASON, answer=message.text, language_code=locale)
-        await state.set_state(CardForm.relationship)
-        await message.answer(i18n.t("card_form.relationship.response", locale=locale),
-                             reply_markup=generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.RELATIONSHIP))
-
-    @form_router.message(CardForm.relationship)
-    async def process_relationship(message: types.Message, state: FSMContext) -> None:
-        locale = message.from_user.language_code
-        request_id = (await state.get_data())['request_id']
-        await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.RELATIONSHIP, answer=message.text, language_code=locale)
-        user = await user_from_message(telegram_user=message.from_user)
-        await state.set_state(CardForm.description)
-
-        description_ideas = await generate_descriptions_samples_keyboard(user=user, locale=locale)
-        await message.answer(i18n.t("card_form.description.response", locale=locale), reply_markup=description_ideas)
-
-    @form_router.message(CardForm.description)
-    async def process_description(message: types.Message, state: FSMContext) -> None:
-        locale = message.from_user.language_code
-        request_id = (await state.get_data())['request_id']
-        await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.DESCRIPTION, answer=message.text, language_code=locale)
-        await state.set_state(CardForm.depiction)
-
-        await message.answer(i18n.t("card_form.depiction.coming_up_with_ideas", locale=locale), reply_markup=ReplyKeyboardRemove())
-        depiction_ideas = await generate_depictions_samples_keyboard(locale=locale, request_id=request_id)
-        await message.answer(i18n.t("card_form.depiction.response", locale=locale), reply_markup=depiction_ideas)
-
-    @form_router.message(CardForm.depiction)
-    async def process_depiction(message: types.Message, state: FSMContext) -> None:
-        locale = message.from_user.language_code
-        request_id = (await state.get_data())['request_id']
-        await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.DEPICTION, answer=message.text, language_code=locale)
-        await state.set_state(CardForm.style)
-
-        await message.answer(i18n.t("card_form.style.response", locale=locale),
-                             reply_markup=generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.STYLE))
-
-    @form_router.message(CardForm.style)
-    async def process_style(message: types.Message, state: FSMContext, bot: Bot) -> None:
-        locale = message.from_user.language_code
-        user = await user_from_message(telegram_user=message.from_user)
-        request_id = (await state.get_data())['request_id']
-        await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.STYLE, answer=message.text, language_code=locale)
-        await state.set_state(CardForm.style)
-        await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
-        await state.clear()
-        await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale)
-
-    @form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))
-    async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot):
-        user = await user_from_message(telegram_user=query.from_user)
-        locale = query.from_user.language_code
-        await query.message.answer(i18n.t("card_form.wait.response", locale=locale))
-        await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale)
+    form_router.message(card_command)(command_start)
+    form_router.message(CardForm.reason)(process_reason)
+    form_router.message(CardForm.relationship)(process_relationship)
+    form_router.message(CardForm.description)(process_description)
+    form_router.message(CardForm.depiction)(process_depiction)
+    form_router.message(CardForm.style)(process_style)
+    form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))(regenerate)
 
     dp.include_router(form_router)

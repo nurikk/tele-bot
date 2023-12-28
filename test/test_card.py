@@ -1,11 +1,11 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
 from src.db import CardRequests, CardRequestsAnswers, TelebotUsers, CardRequestQuestions
 from src.main import init_i18n
 
-from src.message_handlers.card import generate_descriptions_samples_keyboard, generate_depictions_samples_keyboard
+from src.message_handlers.card import generate_descriptions_samples_keyboard, generate_depictions_samples_keyboard, finish
 
 
 def test_foo():
@@ -13,29 +13,28 @@ def test_foo():
 
 
 @pytest.mark.asyncio
-async def test_generate_descriptions_samples_keyboard(in_memory_db):
-    user = await TelebotUsers.create(id=1, telegram_id=123, username='test_user', full_name='Test User')
-    for i in range(1, 10):
-        request = await CardRequests.create(user=user)
-        for language_code in ['en', 'ru']:
-            for question in [CardRequestQuestions.DESCRIPTION, CardRequestQuestions.REASON]:
-                await CardRequestsAnswers.create(request=request, question=question, answer=f'answer {i} {language_code} {question.value}',
-                                                 language_code=language_code)
-                await CardRequestsAnswers.create(request=request, question=question, answer=f'answer {i} {language_code} {question.value}',
-                                                 language_code=language_code)
-
+async def test_generate_descriptions_samples_keyboard(db_mock):
+    await db_mock
+    user = await TelebotUsers.filter(id=1).first()
     await generate_descriptions_samples_keyboard(user, 'en')
 
 
 @pytest.mark.asyncio
-async def test_generate_depictions_samples_keyboard(in_memory_db):
+async def test_generate_depictions_samples_keyboard(db_mock, mock_open_ai_client):
+    await db_mock
     init_i18n()
-    user = await TelebotUsers.create(id=1, telegram_id=123, username='test_user', full_name='Test User')
-    for i in range(1, 10):
-        request = await CardRequests.create(user=user)
-        for language_code in ['en', 'ru']:
-            for question in [CardRequestQuestions.DESCRIPTION, CardRequestQuestions.REASON, CardRequestQuestions.RELATIONSHIP]:
-                await CardRequestsAnswers.create(request=request, question=question, answer=f'answer {i} {language_code} {question.value}',
-                                                 language_code=language_code)
+    user = await TelebotUsers.filter(id=1).first()
+    request = await CardRequests.filter(user=user).first()
 
-    await generate_depictions_samples_keyboard(locale='en', request_id=request.id)
+    await generate_depictions_samples_keyboard(locale='en', request_id=request.id, client=mock_open_ai_client)
+
+
+@pytest.mark.asyncio
+async def test_finish_decrease_cards(db_mock, mock_open_ai_client):
+    await db_mock
+    user = await TelebotUsers.filter(id=1).first()
+    assert user.remaining_cards == 5
+    await finish(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client)
+    await finish(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client)
+    user = await TelebotUsers.filter(id=1).first()
+    assert user.remaining_cards == 3

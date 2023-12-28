@@ -15,6 +15,7 @@ from src.settings import settings
 from src.message_handlers.start import register as register_start_handler
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
+from src.oai import client as async_openai_client
 
 
 async def main(dispatcher: Dispatcher) -> None:
@@ -38,6 +39,6 @@ def init_i18n():
 if __name__ == "__main__":
     init_i18n()
     storage = RedisStorage.from_url(settings.redis_url, state_ttl=timedelta(days=settings.redis_ttl_days))
-    dp = Dispatcher(storage=storage)
+    dp = Dispatcher(storage=storage, async_openai_client=async_openai_client)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main(dispatcher=dp))

@@ -13,9 +13,10 @@ from tortoise import fields, Tortoise
 async def user_from_message(telegram_user: types.User):
     user_props = {
         "full_name": telegram_user.full_name,
-        "username": telegram_user.username
+        "username": telegram_user.username,
+        "remaining_cards": settings.cards_per_user,
     }
-    (user, is_new) = await TelebotUsers.update_or_create(telegram_id=telegram_user.id, defaults=user_props)
+    (user, is_new) = await TelebotUsers.get_or_create(telegram_id=telegram_user.id, defaults=user_props)
     logging.info(f"User {user.full_name} {'created' if is_new else 'updated'}")
     return user
 
@@ -27,6 +28,7 @@ class TelebotUsers(Model):
     telegram_id: int = fields.BigIntField(unique=True, index=True)
     full_name: str = fields.TextField(null=True)
     username: str = fields.TextField()
+    remaining_cards: int = fields.IntField(default=settings.cards_per_user)
 
 
 class CardRequestQuestions(str, Enum):
