@@ -60,6 +60,10 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "AWS_SECRET_ACCESS_KEY",
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
+        },
+        {
+          "name" : "S3_WEBSITE_PREFIX",
+          "value" : "http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
         }
       ]
     }
