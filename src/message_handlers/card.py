@@ -7,9 +7,10 @@ from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, KeyboardButtonRequestUser, KeyboardButtonRequestChat, SwitchInlineQueryChosenChat
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat
 from aiogram.utils.chat_action import ChatActionSender
-from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
+from aiogram.utils.deep_linking import create_start_link
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
 from tortoise.expressions import F as F_SQL
@@ -150,13 +151,13 @@ async def handle_no_more_cards(message: types.Message):
 
     kb = [[
         InlineKeyboardButton(
-            text="Share",
+            text=i18n.t("invite_friend", locale=locale),
             switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(
                 allow_user_chats=True)
         )
     ]]
     await message.answer(
-        i18n.t("card_form.no_cards_left", locale=locale),
+        i18n.t("no_cards_left", locale=locale),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
     )
 
@@ -237,13 +238,20 @@ async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback
                  client=async_openai_client)
 
 
-async def inline_query(query: types.InlineQuery) -> None:
-    # return a Web App open URL
+async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
+    user = await user_from_message(telegram_user=query.from_user)
+    link = await create_start_link(bot, str(user.id))
+
+    join = InlineKeyboardButton(
+        text="Generate my own card",
+        url=link
+    )
     photo = types.InlineQueryResultPhoto(id='foo',
-                                         photo_url='https://placehold.co/600x400/JPG?text=image',
+                                         photo_url='https://placehold.co/600x400/800080/FFF/JPG?text=Invite+your+friend+to+generate+your+own+card',
                                          photo_width=600,
                                          photo_height=400,
-                                         thumbnail_url='https://placehold.co/100x100/JPG?text=thubnail',
+                                         thumbnail_url='https://placehold.co/100x100/800080/FFF/JPG?text=Invite',
+                                         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[join]])
                                          )
     await query.answer(
         results=[photo],

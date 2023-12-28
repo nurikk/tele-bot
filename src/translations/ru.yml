@@ -3,8 +3,9 @@ regenerate: "Перерисовать"
 commands:
   card: "Используй /card чтобы сгенерировать новую открытку."
 
+invite_friend: 'Invite a friend'
+no_cards_left: "No more cards left."
 card_form:
-  no_cards_left: "Открыток больше нет."
   reason:
     response: "Какой повод для открытки?"
     samples: "новый год,рождество,день рождения"
