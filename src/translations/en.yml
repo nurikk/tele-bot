@@ -1,12 +1,12 @@
 first_message: 'Hello %{name}!'
 regenerate: 'Regenerate'
 invite_friend: 'Invite a friend'
-no_cards_left: "No more cards left."
+no_cards_left: "No more cards left"
 share_with_friend: "Share with friend"
-generate_your_own: "Generate your own"
+generate_your_own: "🎁 New Postcard 🎁"
 shared_from: "%{name} shared a postcard with you!"
 commands:
-  card: "Use /card to generate new card."
+  card: "Use /card to create new card."
 card_form:
   reason:
     response: "What's the reason of postcard?"
@@ -24,7 +24,7 @@ card_form:
     response: "Choose the postcard style."
     samples: "cartoon,realistic,caricature,comic"
   wait:
-    response: "Drawing! Please wait a little."
+    response: "Drawing! Please wait a little"
 
 prompt: "Create a %{reason} postcard for my %{relationship}.
  This person is %{description}. 
