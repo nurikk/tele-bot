@@ -66,7 +66,7 @@ resource "aws_ecs_task_definition" "task" {
           "value" : "https://img.gs/cbplcjplpn/500x500/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
         },
         {
-          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
+          "name" : "IMAGE_WEBSITE_PREFIX",
           "value" : "https://img.gs/cbplcjplpn/full/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
         }
       ]
