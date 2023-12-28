@@ -255,9 +255,9 @@ async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
     results = []
-    request_qs = CardRequests.filter(result_image__isnull=False)
+    request_qs = CardRequests.filter(result_image__isnull=False, user=user)
     if request_id:
-        request_qs = request_qs.filter(id=request_id, user=user)
+        request_qs = request_qs.filter(id=request_id)
     requests = await request_qs.limit(5)
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[
