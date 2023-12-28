@@ -6,7 +6,8 @@ import i18n
 from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
+    InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
@@ -140,14 +141,38 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
     return ReplyKeyboardRemove()
 
 
+async def handle_no_more_cards(message: types.Message):
+    locale = message.from_user.language_code
+    await message.answer(i18n.t("card_form.no_cards_left", locale=locale))
+
+    kb = [[
+        InlineKeyboardButton(
+            text="Выбрать ссылку",
+            switch_inline_query_current_chat="links"
+        )
+    ], [
+        InlineKeyboardButton(
+            text="Выбрать изображение",
+            switch_inline_query_current_chat="images"
+        )
+    ]]
+    await message.answer(
+        text="Выберите, что хотите удалить:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=kb)
+    )
+
+
 async def command_start(message: types.Message, state: FSMContext) -> None:
     locale = message.from_user.language_code
     user = await user_from_message(telegram_user=message.from_user)
-    request: CardRequests = await CardRequests.create(user=user, language_code=locale)
-    await state.update_data(request_id=request.id)
-    await state.set_state(CardForm.reason)
-    answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.REASON, columns=1)
-    await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=answer_samples_keyboard)
+    if user.remaining_cards <= 0:
+        await handle_no_more_cards(message=message)
+    else:
+        request: CardRequests = await CardRequests.create(user=user, language_code=locale)
+        await state.update_data(request_id=request.id)
+        await state.set_state(CardForm.reason)
+        answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.REASON, columns=1)
+        await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=answer_samples_keyboard)
 
 
 async def process_reason(message: types.Message, state: FSMContext) -> None:
