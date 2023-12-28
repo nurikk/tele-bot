@@ -233,7 +233,7 @@ async def process_relationship(message: types.Message, state: FSMContext) -> Non
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot, async_openai_client: AsyncOpenAI):
     user = await user_from_message(telegram_user=query.from_user)
     locale = query.from_user.language_code
-    await query.message.answer(i18n.t("card_form.wait.response", locale=locale))
+    await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
     await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
                  client=async_openai_client)
 
