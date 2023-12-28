@@ -12,6 +12,7 @@ redis= "5.0.1"
 tortoise-orm = { extras = ["asyncpg"], version = "0.20.0" }
 #aerich = "0.7.2"
 aerich = {file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev"}
+aioboto3="12.1.0"
 
 [dev-packages]
 pytest = "*"

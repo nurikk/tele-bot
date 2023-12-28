@@ -13,9 +13,11 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hcode, hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
+from openai.types import Image
 from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
 
+from src import s3
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
 from src.fsm.card import CardForm
@@ -24,7 +26,7 @@ from src.prompt_generator import generate_prompt
 from src.settings import settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, image: BufferedInputFile, user: TelebotUsers):
+async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, photo: BufferedInputFile, user: TelebotUsers):
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
         f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
@@ -32,7 +34,7 @@ async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: st
         f"Revised prompt:\n {hcode(revised_prompt)}"
     ]
     await bot.send_message(chat_id=settings.debug_chat_id, text="\n".join(messages))
-    await bot.send_photo(chat_id=settings.debug_chat_id, photo=image)
+    await bot.send_photo(chat_id=settings.debug_chat_id, photo=photo)
 
 
 class Action(str, Enum):
@@ -44,11 +46,10 @@ class CardGenerationCallback(CallbackData, prefix="my"):
     request_id: int
 
 
-async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> (InputFile, str):
+async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> Image:
     response = await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json", user=user_id)
     img = response.data[0]  # Api only returns one image
-    # TODO: save images to s3
-    return BufferedInputFile(file=base64.b64decode(img.b64_json), filename="card.png"), img.revised_prompt
+    return img
 
 
 def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilder:
@@ -68,19 +69,18 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
 
     try:
         async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
-            image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
-            keyboard = generate_image_keyboad(
-                locale=locale, request_id=request_id)
+            image = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
+            image_bytes = base64.b64decode(image.b64_json)
+            keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
 
             await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
-
-            await bot.send_photo(chat_id=chat_id, photo=image, reply_markup=keyboard.as_markup())
+            photo = BufferedInputFile(file=image_bytes, filename="card.png")
+            await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup())
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
-
-            await CardRequests.filter(id=request_id).update(revised_prompt=revised_prompt)
-            await debug_log(prompt_data=data, bot=bot, prompt=prompt,
-                            revised_prompt=revised_prompt, image=image, user=user)
+            image_path = await s3.upload_image(image_bytes)
+            await CardRequests.filter(id=request_id).update(revised_prompt=image.revised_prompt, result_image=image_path)
+            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt, photo=photo, user=user)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
             await bot.send_message(chat_id=chat_id, text=e.body['message'])

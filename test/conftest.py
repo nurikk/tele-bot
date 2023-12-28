@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from dotenv import find_dotenv, load_dotenv
 from tortoise import Tortoise
 from tortoise.contrib.test import getDBConfig, _init_db
 
@@ -52,3 +53,9 @@ def mock_open_ai_client():
     mock_async_openai_client.images.generate.return_value = Mock(data=[mock_image_response])
     mock_async_openai_client.chat.completions.create.return_value = Mock(choices=[mock_choice])
     yield mock_async_openai_client
+
+
+@pytest.fixture(scope='session', autouse=True)
+def load_env():
+    env_file = find_dotenv('.env')
+    load_dotenv(env_file)

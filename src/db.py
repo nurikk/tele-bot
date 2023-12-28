@@ -56,6 +56,7 @@ class CardRequests(Model):
     user = fields.ForeignKeyField("models.TelebotUsers", related_name="requests", index=True)
     generated_prompt: str = fields.TextField(null=True)
     revised_prompt: str = fields.TextField(null=True)
+    result_image: str = fields.TextField(null=True)
 
 
 class CardRequestsAnswers(Model):

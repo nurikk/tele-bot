@@ -9,17 +9,16 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 
-
 resource "aws_ecs_task_definition" "task" {
-  family = "tele-bot-task"
+  family                = "tele-bot-task"
   container_definitions = jsonencode([
     {
-      "name" : "telebot",
-      "image" : aws_ecr_repository.app_ecr_repo.repository_url,
-      "essential" : true,
-      "memory" : 512,
-      "cpu" : 256,
-      "logConfiguration" : {
+      name : "telebot",
+      image : aws_ecr_repository.app_ecr_repo.repository_url,
+      essential : true,
+      memory : 512,
+      cpu : 256,
+      logConfiguration : {
         "logDriver" : "awslogs",
         "options" : {
           "awslogs-group" : aws_cloudwatch_log_group.logs.name,
@@ -27,7 +26,7 @@ resource "aws_ecs_task_definition" "task" {
           "awslogs-stream-prefix" : "ecs"
         }
       },
-      "environment" : [
+      environment : [
         {
           "name" : "OPENAI_API_KEY",
           "value" : var.OPENAI_API_KEY
@@ -43,6 +42,24 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "REDIS_URL",
           "value" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/0"
+        },
+
+        {
+          "name" : "S3_BUCKET_NAME",
+          "value" : aws_s3_bucket.telebot_bucket.id
+        },
+
+        {
+          "name" : "AWS_REGION",
+          "value" : data.aws_region.current.name
+        },
+        {
+          "name" : "AWS_ACCESS_KEY_ID",
+          "value" : aws_iam_access_key.telebot_s3_uploader.id
+        },
+        {
+          "name" : "AWS_SECRET_ACCESS_KEY",
+          "value" : aws_iam_access_key.telebot_s3_uploader.secret
         }
       ]
     }
@@ -85,7 +102,6 @@ resource "aws_default_subnet" "default_subnet_b" {
 }
 
 
-
 resource "aws_ecs_service" "app_service" {
   name                               = "tele-bot-service"
   cluster                            = aws_ecs_cluster.cluster.id
@@ -102,7 +118,7 @@ resource "aws_ecs_service" "app_service" {
       aws_default_subnet.default_subnet_b.id
     ]
     assign_public_ip = true
-    security_groups = [
+    security_groups  = [
       data.aws_security_group.default.id
     ]
   }

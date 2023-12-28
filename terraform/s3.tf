@@ -30,12 +30,12 @@ resource "aws_s3_object" "object" {
   bucket = aws_s3_bucket.telebot_bucket.id
   key    = "index.html"
   source = "./index.html"
-  etag = filemd5("./index.html")
+  etag   = filemd5("./index.html")
 }
 
 resource "aws_s3_bucket_website_configuration" "telebot_static" {
   bucket = aws_s3_bucket.telebot_bucket.id
-   index_document {
+  index_document {
     suffix = aws_s3_object.object.key
   }
 }
@@ -64,4 +64,42 @@ resource "aws_s3_bucket_acl" "site" {
 
   bucket = aws_s3_bucket.telebot_bucket.id
   acl    = "public-read"
+}
+
+
+resource "aws_iam_policy" "user-policy" {
+  name   = "${aws_iam_user.telebot_s3_uploader.name}-policy"
+  policy = jsonencode(
+    {
+      "Version" : "2012-10-17",
+      "Statement" : [
+
+        {
+          "Effect" = "Allow"
+          "Action" = [
+            "s3:ListBucket",
+            "s3:GetBucketLocation",
+            "s3:ListAllMyBuckets"
+          ],
+          "Resource" = "arn:aws:s3:::*"
+        },
+        {
+          "Effect" = "Allow"
+          "Action" = [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:AbortMultipartUpload",
+            "s3:ListMultipartUploadParts",
+            "s3:ListBucketMultipartUploads"
+          ],
+          "Resource" = "${aws_s3_bucket.telebot_bucket.arn}/*"
+        }
+      ]
+    }
+  )
+}
+
+resource "aws_iam_user_policy_attachment" "attach" {
+  user       = aws_iam_user.telebot_s3_uploader.name
+  policy_arn = aws_iam_policy.user-policy.arn
 }

@@ -31,7 +31,7 @@ async def test_generate_depictions_samples_keyboard(db_mock, mock_open_ai_client
 
 @pytest.mark.asyncio
 async def test_finish_decrease_cards(db_mock, mock_open_ai_client):
-    await db_mock
+    # await db_mock
     user = await TelebotUsers.filter(id=1).first()
     assert user.remaining_cards == 5
     await finish(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client)
@@ -53,4 +53,4 @@ async def test_command_start(db_mock, mock_open_ai_client):
 
     await TelebotUsers.filter(id=1).update(remaining_cards=0)
     await command_start(message=mock_message, state=mock_state)
-    mock_answer.assert_has_awaits(calls=[call('card_form.no_cards_left')], any_order=True)
+    mock_answer.assert_has_awaits(calls=[call('no_cards_left', locale='en', switch_inline_query_chosen_chat=ANY)], any_order=True)

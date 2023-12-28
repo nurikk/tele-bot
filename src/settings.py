@@ -14,5 +14,10 @@ class Settings(pydantic_settings.BaseSettings):
 
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
+    aws_access_key_id: str = ''
+    aws_secret_access_key: str = ''
+    s3_bucket_name: str = ''
+    aws_region: str = ''
+
 
 settings = Settings()
