@@ -68,7 +68,8 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
     try:
         async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
             image, revised_prompt = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
-            keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
+            keyboard = generate_image_keyboad(
+                locale=locale, request_id=request_id)
 
             await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
 
@@ -107,7 +108,8 @@ async def generate_depictions_samples_keyboard(client: AsyncOpenAI, locale: str,
                                                                CardRequestQuestions.RELATIONSHIP]
                                         ).values('answers__question', 'answers__answer')
 
-    answers_dict = {item['answers__question']: item['answers__answer'] for item in answers}
+    answers_dict = {item['answers__question']
+                    : item['answers__answer'] for item in answers}
 
     prompt = i18n.t("card_form.depiction.depiction_prompt", locale=locale,
                     reason=answers_dict[CardRequestQuestions.REASON],
@@ -149,7 +151,8 @@ async def handle_no_more_cards(message: types.Message):
     kb = [[
         InlineKeyboardButton(
             text="Share",
-            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True, query="I need a card")
+            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(
+                allow_user_chats=True)
         )
     ]]
     await message.answer(
@@ -167,7 +170,8 @@ async def command_start(message: types.Message, state: FSMContext) -> None:
         request: CardRequests = await CardRequests.create(user=user, language_code=locale)
         await state.update_data(request_id=request.id)
         await state.set_state(CardForm.reason)
-        answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.REASON, columns=1)
+        answer_samples_keyboard = generate_answer_samples_keyboard(
+            locale=locale, question=CardRequestQuestions.REASON, columns=1)
         await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=answer_samples_keyboard)
 
 
@@ -176,7 +180,8 @@ async def process_reason(message: types.Message, state: FSMContext) -> None:
     request_id = (await state.get_data())['request_id']
     await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.REASON, answer=message.text, language_code=locale)
     await state.set_state(CardForm.relationship)
-    answer_samples_keyboard = generate_answer_samples_keyboard(locale=locale, question=CardRequestQuestions.RELATIONSHIP)
+    answer_samples_keyboard = generate_answer_samples_keyboard(
+        locale=locale, question=CardRequestQuestions.RELATIONSHIP)
     await message.answer(i18n.t("card_form.relationship.response", locale=locale), reply_markup=answer_samples_keyboard)
 
 
@@ -232,6 +237,28 @@ async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback
                  client=async_openai_client)
 
 
+async def inline_query(query: types.InlineQuery) -> None:
+    # return a Web App open URL
+    photo = types.InlineQueryResultPhoto(id='foo',
+                                         photo_url='https://placehold.co/600x400/JPG?text=image',
+                                         photo_width=600,
+                                         photo_height=400,
+                                         thumbnail_url='https://placehold.co/100x100/JPG?text=thubnail',
+                                         )
+    await query.answer(
+        results=[photo],
+        cache_time=0
+    )
+
+
+async def chosen_inline_result_handler(chosen_inline_result: types.ChosenInlineResult):
+    pass
+
+
+async def edited_message_handler(edited_message: types.Message):
+    pass
+
+
 def register(dp: Dispatcher):
     form_router = Router()
     form_router.message(card_command)(command_start)
@@ -241,5 +268,10 @@ def register(dp: Dispatcher):
     form_router.message(CardForm.depiction)(process_depiction)
     form_router.message(CardForm.style)(process_style)
     form_router.callback_query(CardGenerationCallback.filter(F.action == Action.ACTION_REGENERATE))(regenerate)
+
+    form_router.edited_message()(edited_message_handler)
+
+    form_router.inline_query()(inline_query)
+    form_router.chosen_inline_result()(chosen_inline_result_handler)
 
     dp.include_router(form_router)
