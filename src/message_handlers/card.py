@@ -152,8 +152,7 @@ async def handle_no_more_cards(message: types.Message):
     kb = [[
         InlineKeyboardButton(
             text=i18n.t("invite_friend", locale=locale),
-            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(
-                allow_user_chats=True)
+            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True)
         )
     ]]
     await message.answer(
