@@ -6,7 +6,7 @@ share_with_friend: "Share with friend"
 
 shared_from: "%{name} shared a postcard with you!"
 
-shared_title: "⬅️ Click here to send a postcard"
+shared_title: "↘️ Click here to send a postcard"
 shared_description: "Postcard from %{name}"
 
 share_message_content_markdown: "[%{name} created a postcard for you](%{photo_url})"
