@@ -13,8 +13,6 @@ tortoise-orm = { extras = ["asyncpg"], version = "0.20.0" }
 #aerich = "0.7.2"
 aerich = {file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev"}
 aioboto3="12.1.0"
-fastapi="0.108.0"
-uvicorn="0.25.0"
 
 newrelic="*"
 
