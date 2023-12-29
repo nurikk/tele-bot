@@ -156,8 +156,8 @@ async def generate_descriptions_samples_keyboard(user: TelebotUsers, locale: str
     return ReplyKeyboardRemove()
 
 
-async def handle_no_more_cards(message: types.Message):
-    locale = message.from_user.language_code
+async def handle_no_more_cards(message: types.Message, user: types.User):
+    locale = user.language_code
 
     kb = [[
         InlineKeyboardButton(
@@ -173,10 +173,10 @@ async def handle_no_more_cards(message: types.Message):
     )
 
 
-async def ensure_user_has_cards(message: types.Message):
-    user = await user_from_message(telegram_user=message.from_user)
-    if user.remaining_cards <= 0:
-        await handle_no_more_cards(message=message)
+async def ensure_user_has_cards(message: types.Message, user: types.User = None) -> bool:
+    telebot_user = await user_from_message(telegram_user=user)
+    if telebot_user.remaining_cards <= 0:
+        await handle_no_more_cards(message=message, user=user)
         return False
     return True
 
@@ -184,7 +184,7 @@ async def ensure_user_has_cards(message: types.Message):
 async def command_start(message: types.Message, state: FSMContext) -> None:
     locale = message.from_user.language_code
     user = await user_from_message(telegram_user=message.from_user)
-    if await ensure_user_has_cards(message=message):
+    if await ensure_user_has_cards(message=message, user=message.from_user):
         request: CardRequests = await CardRequests.create(user=user, language_code=locale)
         await state.update_data(request_id=request.id)
         await state.set_state(CardForm.reason)
@@ -228,7 +228,7 @@ async def process_depiction(message: types.Message, state: FSMContext, async_ope
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot, async_openai_client: AsyncOpenAI):
-    if await ensure_user_has_cards(message=query.message):
+    if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
