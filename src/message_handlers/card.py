@@ -85,7 +85,7 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
 
             await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
             photo = BufferedInputFile(file=image_bytes, filename="card.png")
-            await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup())
+            await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup(), protect_content=True)
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
             image_path = await s3.upload_image(image_bytes)
