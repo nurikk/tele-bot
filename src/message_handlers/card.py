@@ -193,7 +193,7 @@ async def process_reason(message: types.Message, state: FSMContext) -> None:
     await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.REASON, answer=message.text, language_code=locale)
     await state.set_state(CardForm.description)
     answer_samples_keyboard = generate_answer_samples_keyboard(
-        locale=locale, question=CardRequestQuestions.DESCRIPTION)
+        locale=locale, question=CardRequestQuestions.DESCRIPTION, columns=4)
     await message.answer(i18n.t(f"card_form.{CardRequestQuestions.DESCRIPTION.value}.response", locale=locale), reply_markup=answer_samples_keyboard)
 
 

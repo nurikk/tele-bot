@@ -8,6 +8,10 @@ resource "aws_cloudwatch_log_group" "logs" {
   name = "/ecs/tele-bot-task"
 }
 
+locals {
+  task_memory = 2048
+  task_cpu = 1024
+}
 
 resource "aws_ecs_task_definition" "task" {
   family                = "tele-bot-task"
@@ -16,8 +20,8 @@ resource "aws_ecs_task_definition" "task" {
       name : "telebot",
       image : aws_ecr_repository.app_ecr_repo.repository_url,
       essential : true,
-      memory : 2048,
-      cpu : 1024,
+      memory : local.task_memory,
+      cpu : local.task_cpu,
       logConfiguration : {
         "logDriver" : "awslogs",
         "options" : {
@@ -75,8 +79,8 @@ resource "aws_ecs_task_definition" "task" {
 
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  memory                   = 512
-  cpu                      = 256
+  memory                   = local.task_memory
+  cpu                      = local.task_cpu
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 }
 
