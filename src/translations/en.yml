@@ -1,7 +1,7 @@
 first_message: 'Hello %{name}!'
 regenerate: 'Redraw'
 invite_friend: 'Invite a friend'
-no_cards_left: "No more cards left"
+no_cards_left: "Not enough power ⚡️ to create a picture. Invite a friend and get 5 new cards"
 share_with_friend: "Share with friend"
 generate_your_own: "Create New Postcard 🎁"
 shared_from: "%{name} shared a postcard with you!"
@@ -10,13 +10,13 @@ commands:
 card_form:
   reason:
     response: "What's the reason of postcard?"
-    samples: "New year 🎄,Christmas 🎅,Birthday 🎁"
+    samples: "New Year 🎄,Christmas 🎅,Birthday 🎁"
   relationship:
     response: "What is your relationship with the person being congratulated?"
     samples: "friend,wife,husband,son,daughter,mom"
   description:
     response: "Describe the person being congratulated. (Send one emoji)"
-    samples: 🐱,🐶,🐰,🐻,🦊,🌞,🦄,😎,⭐️,🍆,💩,🚀
+    samples: 🐱,🐶,🐰,🐻,🦊,🌞,🦄,🐉,⭐️,🍆,💩,🚀
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
