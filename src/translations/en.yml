@@ -3,31 +3,31 @@ regenerate: 'Redraw'
 invite_friend: 'Invite a friend'
 no_cards_left: "No more cards left"
 share_with_friend: "Share with friend"
-generate_your_own: "New Postcard 🎁"
+generate_your_own: "Create New Postcard 🎁"
 shared_from: "%{name} shared a postcard with you!"
 commands:
   card: "Use /card to create new card."
 card_form:
   reason:
     response: "What's the reason of postcard?"
-    samples: "new year,christmas,birthday"
+    samples: "New year 🎄,Christmas 🎅,Birthday 🎁"
   relationship:
     response: "What is your relationship with the person being congratulated?"
     samples: "friend,wife,husband,son,daughter,mom"
   description:
     response: "Describe the person being congratulated. (Send one emoji)"
-    samples: 🐱,🐶,🐭,💩,🦄,🔄
+    samples: 🐱,🐶,🐰,🐻,🦊,🌞,🦄,😎,⭐️,🍆,💩,🚀
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
     depiction_prompt: "I'm drawing a postcard to celebrate %{reason}. This person looks like %{description}. What can I draw?"
   style:
     response: "Choose the postcard style."
-    samples: "cartoon,realistic,caricature,comic"
+    samples: "cartoon,realistic,caricature,comics"
   wait:
     response: "Drawing! Please wait a little"
 
 prompt: "Create a %{reason} postcard.
  This person looks like %{description}. 
  Depict %{depiction}. 
- Make sure to include congratulations text celebrating %{reason}."
+ %{reason}. Add fireworks"
