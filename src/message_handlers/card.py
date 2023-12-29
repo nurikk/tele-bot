@@ -55,19 +55,20 @@ async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> Imag
 
 
 def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilder:
-    builder = InlineKeyboardBuilder()
     button_label = i18n.t('regenerate', locale=locale)
     callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
-    builder.button(text=button_label, callback_data=callback_data)
+    buttons = [
+        [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
+        [InlineKeyboardButton(
+            text=i18n.t("share_with_friend", locale=locale),
+            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
+                                                                        allow_group_chats=True,
+                                                                        allow_channel_chats=True,
+                                                                        query=str(request_id))
+        )]
+    ]
 
-    builder.add(InlineKeyboardButton(
-        text=i18n.t("share_with_friend", locale=locale),
-        switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
-                                                                    allow_group_chats=True,
-                                                                    allow_channel_chats=True,
-                                                                    query=str(request_id))
-    ))
-    return builder
+    return InlineKeyboardBuilder(markup=buttons)
 
 
 async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI) -> None:
