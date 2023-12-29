@@ -38,7 +38,7 @@ class TelebotUsers(Model):
     last_seen: datetime.datetime = fields.DatetimeField(auto_now=True)
     telegram_id: int = fields.BigIntField(unique=True, index=True)
     full_name: str = fields.TextField(null=True)
-    username: str = fields.TextField()
+    username: str = fields.TextField(null=True)
     remaining_cards: int = fields.IntField(default=settings.cards_per_user)
 
 
