@@ -62,7 +62,10 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
 
     builder.add(InlineKeyboardButton(
         text=i18n.t("share_with_friend", locale=locale),
-        switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True, query=str(request_id))
+        switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
+                                                                    allow_group_chats=True,
+                                                                    allow_channel_chats=True,
+                                                                    query=str(request_id))
     ))
     return builder
 
@@ -158,7 +161,9 @@ async def handle_no_more_cards(message: types.Message):
     kb = [[
         InlineKeyboardButton(
             text=i18n.t("invite_friend", locale=locale),
-            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True)
+            switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
+                                                                        allow_group_chats=True,
+                                                                        allow_channel_chats=True)
         )
     ]]
     await message.answer(
