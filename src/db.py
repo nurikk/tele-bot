@@ -2,7 +2,8 @@ import datetime
 import logging
 from enum import Enum
 
-from aiogram import types
+import i18n
+from aiogram import types, Bot
 
 from src.settings import settings
 
@@ -11,12 +12,15 @@ from tortoise import fields, Tortoise
 from tortoise.expressions import F as F_SQL
 
 
-async def handle_referral(user_id: int):
+async def handle_referral(user_id: int, bot: Bot = None):
     logging.info(f"Adding {settings.cards_per_user} cards to user {user_id}")
+    referee = await TelebotUsers.filter(id=user_id).first()
     await TelebotUsers.filter(id=user_id).update(remaining_cards=F_SQL("remaining_cards") + settings.cards_per_user)
+    if referee.remaining_cards <= 0 and bot:
+        await bot.send_message(chat_id=referee.telegram_id, text=i18n.t("referral_bonus_granted", locale="en"))
 
 
-async def user_from_message(telegram_user: types.User, referred_by: int = None):
+async def user_from_message(telegram_user: types.User, referred_by: int = None, bot: Bot = None):
     user_props = {
         "full_name": telegram_user.full_name,
         "username": telegram_user.username,
@@ -26,7 +30,7 @@ async def user_from_message(telegram_user: types.User, referred_by: int = None):
     (user, is_new) = await TelebotUsers.get_or_create(telegram_id=telegram_user.id, defaults=user_props)
     if is_new and referred_by:
         logging.info(f"Registered new referral user {user.full_name}(@{user.username}) new user, referred by {referred_by}")
-        await handle_referral(user_id=referred_by)
+        await handle_referral(user_id=referred_by, bot=bot)
     logging.info(f"User {user.full_name} {'created' if is_new else 'updated'}")
     return user
 

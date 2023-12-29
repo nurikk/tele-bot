@@ -8,6 +8,7 @@ shared_from: "%{name} shared a postcard with you!"
 shared_description: "Click here to send a postcard to your friend"
 share_message_content_markdown: "[%{name} created a postcard for you](%{photo_url})"
 generate_your_own: "Create New Postcard 🎁"
+referral_bonus_granted: "You got 5 new cards for inviting a friend"
 commands:
   card: "Use /card to create new card."
 card_form:
