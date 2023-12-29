@@ -72,6 +72,18 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "IMAGE_WEBSITE_PREFIX",
           "value" : "https://img.gs/cbplcjplpn/full/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
+        },
+        {
+          "name" : "NEW_RELIC_API_KEY",
+          "value": var.NEW_RELIC_API_KEY
+        },
+        {
+          "name": "NEW_RELIC_ACCOUNT_ID",
+          "value": "4301128",
+        },
+        {
+          "name": "NEW_RELIC_REGION",
+          "value": "EU"
         }
       ]
     }

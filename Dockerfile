@@ -9,6 +9,7 @@ COPY Pipfile.lock .
 
 RUN pipenv install --system --deploy --dev
 COPY ./src ./src
+COPY ./newrelic.ini ./
 COPY ./entrypoint.sh ./
 COPY ./pyproject.toml ./
 COPY ./migrations ./migrations
