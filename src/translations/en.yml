@@ -6,7 +6,7 @@ share_with_friend: "Share with friend"
 
 shared_from: "%{name} shared a postcard with you!"
 
-shared_title: "Click here to send a postcard to your friend"
+shared_title: "⬅️ Click here to send a postcard"
 shared_description: "Postcard from %{name}"
 
 share_message_content_markdown: "[%{name} created a postcard for you](%{photo_url})"
@@ -23,7 +23,7 @@ card_form:
     samples: "friend,wife,husband,son,daughter,mom"
   description:
     response: "Describe the person being congratulated. (Send one emoji)"
-    samples: 🐱,🐶,🐰,🐻,🦊,🌞,🦄,🐉,⭐️,🍆,💩,🚀
+    samples: 🐱,🐶,🐰,🐻,🦊,❄️,🦄,🐉,⭐️,🍆,💩,🚀
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
