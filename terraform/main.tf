@@ -17,7 +17,7 @@ resource "aws_ecs_task_definition" "task" {
       image : aws_ecr_repository.app_ecr_repo.repository_url,
       essential : true,
       memory : 2048,
-      cpu : 1024,
+      cpu : 2048,
       logConfiguration : {
         "logDriver" : "awslogs",
         "options" : {
