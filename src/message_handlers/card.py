@@ -253,6 +253,22 @@ async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
         photo_url = f"{settings.image_website_prefix}/{request.result_image}"
         thumbnail_url = f"{settings.image_thumbnail_website_prefix}/{request.result_image}"
         logging.info(f"{photo_url=} {thumbnail_url=}")
+        # results.append(types.InlineQueryResultArticle(
+        #     id=str(datetime.datetime.now()),
+        #
+        #     title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
+        #     description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
+        #     thumbnail_width=500,
+        #     thumbnail_height=500,
+        #     thumbnail_url=thumbnail_url,
+        #     input_message_content=types.InputTextMessageContent(
+        #         message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
+        #                             name=query.from_user.full_name, photo_url=photo_url),
+        #         parse_mode="MarkdownV2",
+        #     ),
+        #     caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
+        #     reply_markup=reply_markup,
+        # ))
         results.append(types.InlineQueryResultPhoto(
             id=str(datetime.datetime.now()),
             photo_url=photo_url,

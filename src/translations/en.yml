@@ -3,8 +3,11 @@ regenerate: 'Redraw'
 invite_friend: 'Invite a friend'
 no_cards_left: "Not enough power ⚡️ to create a picture. Invite a friend and get 5 new cards"
 share_with_friend: "Share with friend"
-generate_your_own: "Create New Postcard 🎁"
+shared_title: "Postcard from %{name}"
 shared_from: "%{name} shared a postcard with you!"
+shared_description: "Click here to send a postcard to your friend"
+share_message_content_markdown: "![image](%{photo_url})"
+generate_your_own: "Create New Postcard 🎁"
 commands:
   card: "Use /card to create new card."
 card_form:

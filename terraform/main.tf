@@ -20,8 +20,6 @@ resource "aws_ecs_task_definition" "task" {
       name : "telebot",
       image : aws_ecr_repository.app_ecr_repo.repository_url,
       essential : true,
-      memory : local.task_memory,
-      cpu : local.task_cpu,
       logConfiguration : {
         "logDriver" : "awslogs",
         "options" : {
@@ -30,6 +28,7 @@ resource "aws_ecs_task_definition" "task" {
           "awslogs-stream-prefix" : "ecs"
         }
       },
+      command: ["./bot.sh"],
       environment : [
         {
           "name" : "OPENAI_API_KEY",
@@ -64,6 +63,50 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "AWS_SECRET_ACCESS_KEY",
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
+        },
+        {
+          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/500x500/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
+        },
+        {
+          "name" : "IMAGE_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/full/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
+        },
+        {
+          "name" : "NEW_RELIC_API_KEY",
+          "value": var.NEW_RELIC_API_KEY
+        },
+        {
+          "name": "NEW_RELIC_ACCOUNT_ID",
+          "value": "4301128",
+        },
+        {
+          "name": "NEW_RELIC_REGION",
+          "value": "EU"
+        }
+      ]
+    },
+    {
+      name : "telebot-og",
+      image : aws_ecr_repository.app_ecr_repo.repository_url,
+      essential : true,
+      logConfiguration : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
+          "awslogs-region" : data.aws_region.current.name,
+          "awslogs-stream-prefix" : "ecs"
+        }
+      },
+      command: ["./server.sh"],
+      environment : [
+        {
+          "name" : "DB_URL",
+          "value" : "postgres://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
+        },
+        {
+          "name" : "REDIS_URL",
+          "value" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/0"
         },
         {
           "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
