@@ -131,10 +131,6 @@ resource "aws_ecs_service" "app_service" {
   task_definition                    = aws_ecs_task_definition.task.arn
   launch_type                        = "FARGATE"
   desired_count                      = 1
-  deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
-
-
   network_configuration {
     subnets = [
       aws_default_subnet.default_subnet_a.id,
