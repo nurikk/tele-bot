@@ -15,7 +15,8 @@ card_form:
     response: "What is your relationship with the person being congratulated?"
     samples: "friend,wife,husband,son,daughter,mom"
   description:
-    response: "Describe the person being congratulated. (Ex: my friend is tall and blond with long hair)"
+    response: "Describe the person being congratulated. (Send one emoji)"
+    samples: 🐱,🐶,🐭,💩,🦄,🔄
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
