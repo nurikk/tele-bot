@@ -16,8 +16,8 @@ resource "aws_ecs_task_definition" "task" {
       name : "telebot",
       image : aws_ecr_repository.app_ecr_repo.repository_url,
       essential : true,
-      memory : 512,
-      cpu : 256,
+      memory : 2048,
+      cpu : 1024,
       logConfiguration : {
         "logDriver" : "awslogs",
         "options" : {
