@@ -11,6 +11,7 @@ RUN pipenv install --system --deploy --dev
 COPY ./src ./src
 COPY ./newrelic.ini ./
 COPY bot.sh ./
+COPY server.sh ./
 COPY ./pyproject.toml ./
 COPY ./migrations ./migrations
 CMD ["./bot.sh"]
