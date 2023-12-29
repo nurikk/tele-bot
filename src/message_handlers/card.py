@@ -9,7 +9,7 @@ from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, InlineQueryResultsButton
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -240,10 +240,10 @@ async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
     results = []
-    request_qs = CardRequests.filter(result_image__isnull=False, user=user)
+    request_qs = CardRequests.filter(result_image__isnull=False, user=user).order_by("-created_at")
     if request_id:
         request_qs = request_qs.filter(id=request_id)
-    requests = await request_qs.limit(5)
+    requests = await request_qs.limit(8)
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
@@ -253,31 +253,19 @@ async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
         photo_url = f"{settings.image_website_prefix}/{request.result_image}"
         thumbnail_url = f"{settings.image_thumbnail_website_prefix}/{request.result_image}"
         logging.info(f"{photo_url=} {thumbnail_url=}")
-        # results.append(types.InlineQueryResultArticle(
-        #     id=str(datetime.datetime.now()),
-        #
-        #     title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
-        #     description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
-        #     thumbnail_width=500,
-        #     thumbnail_height=500,
-        #     thumbnail_url=thumbnail_url,
-        #     input_message_content=types.InputTextMessageContent(
-        #         message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
-        #                             name=query.from_user.full_name, photo_url=photo_url),
-        #         parse_mode="MarkdownV2",
-        #     ),
-        #     caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
-        #     reply_markup=reply_markup,
-        # ))
-        results.append(types.InlineQueryResultPhoto(
+        results.append(types.InlineQueryResultArticle(
             id=str(datetime.datetime.now()),
-            photo_url=photo_url,
-            photo_width=1024,
-            photo_height=1024,
-            title="Title",
-            caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
-            description="Description",
+            title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
+            description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
+            thumbnail_width=500,
+            thumbnail_height=500,
             thumbnail_url=thumbnail_url,
+            input_message_content=types.InputTextMessageContent(
+                message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
+                                    name=query.from_user.full_name, photo_url=photo_url),
+                parse_mode="MarkdownV2",
+            ),
+            caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
             reply_markup=reply_markup,
         ))
 
