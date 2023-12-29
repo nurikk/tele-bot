@@ -19,15 +19,14 @@ card_form:
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
-    depiction_prompt: "I'm drawing a postcard for my %{relationship} to celebrate %{reason}. This person is %{description}. What can I draw?"
+    depiction_prompt: "I'm drawing a postcard to celebrate %{reason}. This person looks like %{description}. What can I draw?"
   style:
     response: "Choose the postcard style."
     samples: "cartoon,realistic,caricature,comic"
   wait:
     response: "Drawing! Please wait a little"
 
-prompt: "Create a %{reason} postcard for my %{relationship}.
- This person is %{description}. 
+prompt: "Create a %{reason} postcard.
+ This person looks like %{description}. 
  Depict %{depiction}. 
- Render the entire scene in a %{style} style. 
  Make sure to include congratulations text celebrating %{reason}."
