@@ -22,8 +22,8 @@ card_form:
     response: "What is your relationship with the person being congratulated?"
     samples: "friend,wife,husband,son,daughter,mom"
   description:
-    response: "Describe the person being congratulated. (Send one emoji)"
-    samples: 🐱,🐶,🐰,🐻,🦊,❄️,🦄,🐉,⭐️,🍆,💩,🚀
+    response: "Describe the person being congratulated. (Pick or send your emoji)"
+    samples: 🐱,🐶,🐰,🐼,🦊,❄️,🦄,🦔,⭐️,🍆,💩,🚀
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
@@ -34,7 +34,7 @@ card_form:
   wait:
     response: "Drawing! Please wait a little"
 
-prompt: "Create a %{reason} postcard.
+prompt: "Create a %{reason} greeting picture.
  This person looks like %{description}. 
  Depict %{depiction}. 
  %{reason}. Add fireworks"
