@@ -58,7 +58,7 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     button_label = i18n.t('regenerate', locale=locale)
     callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
     buttons = [
-        [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
+        # [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
         [InlineKeyboardButton(
             text=i18n.t("share_with_friend", locale=locale),
             switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
