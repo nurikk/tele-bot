@@ -9,8 +9,8 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory = 1024
-  task_cpu = 512
+  task_memory = 512
+  task_cpu = 256
 }
 
 resource "aws_ecs_task_definition" "task" {
