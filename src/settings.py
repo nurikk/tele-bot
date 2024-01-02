@@ -20,6 +20,7 @@ class Settings(pydantic_settings.BaseSettings):
     aws_region: str = ''
     image_website_prefix: str = ''
     image_thumbnail_website_prefix: str = ''
+    self_ip: str = ''
 
 
 settings = Settings()
