@@ -10,7 +10,7 @@ resource "aws_cloudwatch_log_group" "logs" {
 
 locals {
   task_memory = 512
-  task_cpu = 256
+  task_cpu    = 256
 }
 
 resource "aws_ecs_task_definition" "task" {
@@ -28,7 +28,7 @@ resource "aws_ecs_task_definition" "task" {
           "awslogs-stream-prefix" : "ecs"
         }
       },
-      command: ["./bot.sh"],
+      command : ["./bot.sh"],
       environment : [
         {
           "name" : "OPENAI_API_KEY",
@@ -74,15 +74,37 @@ resource "aws_ecs_task_definition" "task" {
         },
         {
           "name" : "NEW_RELIC_API_KEY",
-          "value": var.NEW_RELIC_API_KEY
+          "value" : var.NEW_RELIC_API_KEY
         },
         {
-          "name": "NEW_RELIC_ACCOUNT_ID",
-          "value": "4301128",
+          "name" : "NEW_RELIC_ACCOUNT_ID",
+          "value" : "4301128",
         },
         {
-          "name": "NEW_RELIC_REGION",
-          "value": "EU"
+          "name" : "NEW_RELIC_REGION",
+          "value" : "EU"
+        }
+      ]
+    },
+    {
+      name : "imageproxy",
+      image : "darthsim/imgproxy:latest",
+      essential : false,
+      logConfiguration : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
+          "awslogs-region" : data.aws_region.current.name,
+          "awslogs-stream-prefix" : "imgproxy"
+        }
+      },
+      environment : [
+      ],
+      portMappings = [
+        {
+          containerPort = 8080
+          hostPort      = 8080
+          protocol      = "tcp"
         }
       ]
     }
@@ -126,11 +148,11 @@ resource "aws_default_subnet" "default_subnet_b" {
 
 
 resource "aws_ecs_service" "app_service" {
-  name                               = "tele-bot-service"
-  cluster                            = aws_ecs_cluster.cluster.id
-  task_definition                    = aws_ecs_task_definition.task.arn
-  launch_type                        = "FARGATE"
-  desired_count                      = 1
+  name            = "tele-bot-service"
+  cluster         = aws_ecs_cluster.cluster.id
+  task_definition = aws_ecs_task_definition.task.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
   network_configuration {
     subnets = [
       aws_default_subnet.default_subnet_a.id,
@@ -141,4 +163,10 @@ resource "aws_ecs_service" "app_service" {
       data.aws_security_group.default.id
     ]
   }
+
+#  load_balancer {
+#    target_group_arn = aws_lb_target_group.ecs_tg.arn
+#    container_name   = "imageproxy"
+#    container_port   = 8080
+#  }
 }
