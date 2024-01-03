@@ -39,26 +39,16 @@ def init_i18n():
 
 
 if __name__ == "__main__":
-    settings = Settings()
-
     init_i18n()
-    async_openai_client = AsyncOpenAI(
-        # This is the default and can be omitted
-        api_key=settings.openai_api_key
-    )
-
-    image_proxy = ImageProxy(imgproxy_hostname=settings.imgproxy_hostname,
-                             imgproxy_port=settings.imgproxy_port,
-                             imgproxy_key=settings.imgproxy_key,
-                             imgproxy_salt=settings.imgproxy_salt)
-
-    s3_uploader = S3Uploader(aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key,
-                             aws_region=settings.aws_region, s3_bucket_name=settings.s3_bucket_name)
-
-    storage = RedisStorage.from_url(settings.redis_url, state_ttl=timedelta(days=settings.redis_ttl_days))
-    dp = Dispatcher(storage=storage, async_openai_client=async_openai_client,
+    settings = Settings()
+    dp = Dispatcher(storage=RedisStorage.from_url(settings.redis_url, state_ttl=timedelta(days=settings.redis_ttl_days)),
+                    async_openai_client=AsyncOpenAI(api_key=settings.openai_api_key),
                     settings=settings,
-                    s3_uploader=s3_uploader,
-                    image_proxy=image_proxy)
+                    s3_uploader=S3Uploader(aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key,
+                                           aws_region=settings.aws_region, s3_bucket_name=settings.s3_bucket_name),
+                    image_proxy=ImageProxy(imgproxy_hostname=settings.imgproxy_hostname,
+                                           imgproxy_port=settings.imgproxy_port,
+                                           imgproxy_key=settings.imgproxy_key,
+                                           imgproxy_salt=settings.imgproxy_salt))
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main(dispatcher=dp, telegram_bot_token=settings.telegram_bot_token, db_url=settings.db_url))
