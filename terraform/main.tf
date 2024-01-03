@@ -65,14 +65,6 @@ resource "aws_ecs_task_definition" "task" {
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
         },
         {
-          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
-          "value" : "https://img.gs/cbplcjplpn/500x500/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
-        },
-        {
-          "name" : "IMAGE_WEBSITE_PREFIX",
-          "value" : "https://img.gs/cbplcjplpn/full/http://${aws_s3_bucket_website_configuration.telebot_static.website_endpoint}"
-        },
-        {
           "name" : "NEW_RELIC_API_KEY",
           "value" : var.NEW_RELIC_API_KEY
         },
@@ -99,6 +91,30 @@ resource "aws_ecs_task_definition" "task" {
         }
       },
       environment : [
+        {
+          "name" : "IMGPROXY_KEY",
+          "value" : var.IMGPROXY_KEY
+        },
+        {
+          "name" : "IMGPROXY_SALT",
+          "value" : var.IMGPROXY_SALT
+        },
+        {
+          "name" : "IMGPROXY_USE_S3",
+          "value" : "true"
+        },
+        {
+          "name" : "AWS_REGION",
+          "value" : data.aws_region.current.name
+        },
+        {
+          "name" : "AWS_ACCESS_KEY_ID",
+          "value" : aws_iam_access_key.telebot_s3_uploader.id
+        },
+        {
+          "name" : "AWS_SECRET_ACCESS_KEY",
+          "value" : aws_iam_access_key.telebot_s3_uploader.secret
+        }
       ],
       portMappings = [
         {
@@ -160,7 +176,8 @@ resource "aws_ecs_service" "app_service" {
     ]
     assign_public_ip = true
     security_groups  = [
-      data.aws_security_group.default.id
+      data.aws_security_group.default.id,
+      aws_security_group.image_proxy_sg.id
     ]
   }
 

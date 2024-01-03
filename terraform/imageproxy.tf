@@ -1,23 +1,20 @@
-#resource "aws_security_group" "image_proxy_sg" {
-# name   = "ecs-security-group"
-# vpc_id = aws_default_vpc.default.id
-#
-# ingress {
-#   from_port   = 0
-#   to_port     = 0
-#   protocol    = -1
-#   self        = "false"
-#   cidr_blocks = ["0.0.0.0/0"]
-#   description = "any"
-# }
-#
-# egress {
-#   from_port   = 0
-#   to_port     = 0
-#   protocol    = "-1"
-#   cidr_blocks = ["0.0.0.0/0"]
-# }
-#}
+resource "aws_security_group" "image_proxy_sg" {
+ vpc_id = aws_default_vpc.default.id
+
+ ingress {
+   from_port   = 8080
+   to_port     = 8080
+   protocol    = "tcp"
+   cidr_blocks = ["0.0.0.0/0"]
+ }
+
+ egress {
+   from_port   = 0
+   to_port     = 0
+   protocol    = "-1"
+   cidr_blocks = ["0.0.0.0/0"]
+ }
+}
 
 #resource "aws_lb" "ecs_alb" {
 #  name               = "ecs-alb"
