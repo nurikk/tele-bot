@@ -9,3 +9,10 @@ variable "TELEGRAM_BOT_TOKEN" {
 variable "NEW_RELIC_API_KEY" {
   type = string
 }
+variable "IMGPROXY_KEY" {
+  type = string
+}
+
+variable "IMGPROXY_SALT" {
+  type = string
+}
