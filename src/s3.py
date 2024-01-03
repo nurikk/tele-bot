@@ -3,17 +3,19 @@ from io import BytesIO
 
 import aioboto3
 
-from src.settings import settings
 
+class S3Uploader:
+    def __init__(self, aws_access_key_id: str, aws_secret_access_key: str, aws_region: str, s3_bucket_name: str):
+        self.session = aioboto3.Session(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=aws_region
+        )
+        self.s3_bucket_name = s3_bucket_name
 
-async def upload_image(image: bytes) -> str:
-    session = aioboto3.Session(
-        aws_access_key_id=settings.aws_access_key_id,
-        aws_secret_access_key=settings.aws_secret_access_key,
-        region_name=settings.aws_region
-    )
-    file_path = f'images/{md5(image).hexdigest()}.png'
-    async with session.client("s3") as s3:
-        await s3.upload_fileobj(BytesIO(image), settings.s3_bucket_name, file_path)
+    async def upload_image(self, image: bytes) -> str:
+        file_path = f'images/{md5(image).hexdigest()}.png'
+        async with self.session.client("s3") as s3:
+            await s3.upload_fileobj(BytesIO(image), self.s3_bucket_name, file_path)
 
-    return file_path
+        return file_path

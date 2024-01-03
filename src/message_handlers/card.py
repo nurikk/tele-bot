@@ -8,8 +8,8 @@ import i18n
 from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
-from aiogram.types import BufferedInputFile, CallbackQuery, InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, InlineQueryResultsButton
+from aiogram.types import BufferedInputFile, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -19,24 +19,24 @@ from openai.types import Image
 from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
 
-from src import s3
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
 from src.fsm.card import CardForm
 
 from src.prompt_generator import generate_prompt
-from src.settings import settings
+from src.s3 import S3Uploader
+from src.settings import Settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, photo: BufferedInputFile, user: TelebotUsers):
+async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, photo: BufferedInputFile, user: TelebotUsers, debug_chat_id: int):
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
         f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
         f"Generated prompt:\n {hcode(prompt)}",
         f"Revised prompt:\n {hcode(revised_prompt)}"
     ]
-    await bot.send_message(chat_id=settings.debug_chat_id, text="\n".join(messages))
-    await bot.send_photo(chat_id=settings.debug_chat_id, photo=photo)
+    await bot.send_message(chat_id=debug_chat_id, text="\n".join(messages))
+    await bot.send_photo(chat_id=debug_chat_id, photo=photo)
 
 
 class Action(str, Enum):
@@ -71,7 +71,8 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return InlineKeyboardBuilder(markup=buttons)
 
 
-async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI) -> None:
+async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI, debug_chat_id: int,
+                 s3_uploader: S3Uploader) -> None:
     answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
     prompt = generate_prompt(data=data, locale=locale)
@@ -88,9 +89,10 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
             await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup(), protect_content=True)
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
-            image_path = await s3.upload_image(image_bytes)
+            image_path = await s3_uploader.upload_image(image_bytes)
             await CardRequests.filter(id=request_id).update(revised_prompt=image.revised_prompt, result_image=image_path)
-            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt, photo=photo, user=user)
+            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt, photo=photo, user=user,
+                            debug_chat_id=debug_chat_id)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
             await bot.send_message(chat_id=chat_id, text=e.body['message'])
@@ -215,7 +217,8 @@ async def process_description(message: types.Message, state: FSMContext, async_o
         await message.answer(i18n.t(f"card_form.{CardRequestQuestions.DEPICTION.value}.response", locale=locale), reply_markup=depiction_ideas)
 
 
-async def process_depiction(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI, bot: Bot) -> None:
+async def process_depiction(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI, bot: Bot, settings: Settings,
+                            s3_uploader: S3Uploader) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
     request_id = (await state.get_data())['request_id']
@@ -224,19 +227,21 @@ async def process_depiction(message: types.Message, state: FSMContext, async_ope
 
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
-    await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale, client=async_openai_client)
+    await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale,
+                 client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader)
 
 
-async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot, async_openai_client: AsyncOpenAI):
+async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot,
+                     async_openai_client: AsyncOpenAI, settings: Settings, s3_uploader: S3Uploader):
     if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
         await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                     client=async_openai_client)
+                     client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader)
 
 
-async def inline_query(query: types.InlineQuery, bot: Bot) -> None:
+async def inline_query(query: types.InlineQuery, bot: Bot, settings: Settings) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
     request_id = query.query

@@ -1,5 +1,4 @@
 import asyncio
-from unittest.mock import AsyncMock, Mock
 
 import pytest
 from dotenv import find_dotenv, load_dotenv
@@ -55,7 +54,7 @@ def mock_open_ai_client():
     yield mock_async_openai_client
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='session')
 def load_env():
-    env_file = find_dotenv('.env')
-    load_dotenv(env_file)
+    env_file = find_dotenv('../.env')
+    return load_dotenv(env_file)
