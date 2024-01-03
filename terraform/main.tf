@@ -65,6 +65,14 @@ resource "aws_ecs_task_definition" "task" {
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
         },
         {
+          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/256x256/"
+        },
+        {
+          "name" : "IMAGE_WEBSITE_PREFIX",
+          "value" : "https://img.gs/cbplcjplpn/full/"
+        },
+        {
           "name" : "NEW_RELIC_API_KEY",
           "value" : var.NEW_RELIC_API_KEY
         },

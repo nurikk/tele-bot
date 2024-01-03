@@ -11,6 +11,7 @@ class S3Uploader:
             aws_secret_access_key=aws_secret_access_key,
             region_name=aws_region
         )
+        self.aws_region = aws_region
         self.s3_bucket_name = s3_bucket_name
 
     async def upload_image(self, image: bytes) -> str:
@@ -19,3 +20,9 @@ class S3Uploader:
             await s3.upload_fileobj(BytesIO(image), self.s3_bucket_name, file_path)
 
         return file_path
+
+    def get_full_s3_url(self, file_path: str) -> str:
+        return f's3://{self.s3_bucket_name}/{file_path}'
+
+    def get_website_url(self, file_path: str) -> str:
+        return f"http://{self.s3_bucket_name}.s3-website-{self.aws_region}.amazonaws.com/{file_path}"

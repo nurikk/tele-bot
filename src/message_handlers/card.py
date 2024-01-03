@@ -9,7 +9,7 @@ from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputFile
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -22,13 +22,15 @@ from tortoise.functions import Max
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
 from src.fsm.card import CardForm
+from src.img import ImageProxy
 
 from src.prompt_generator import generate_prompt
 from src.s3 import S3Uploader
 from src.settings import Settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str, photo: BufferedInputFile, user: TelebotUsers, debug_chat_id: int):
+async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str,
+                    photo: InputFile, user: TelebotUsers, debug_chat_id: int):
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
         f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
@@ -72,7 +74,7 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
 
 
 async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI, debug_chat_id: int,
-                 s3_uploader: S3Uploader) -> None:
+                 s3_uploader: S3Uploader, image_proxy: ImageProxy) -> None:
     answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
     prompt = generate_prompt(data=data, locale=locale)
@@ -82,16 +84,19 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
         async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
             image = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
             image_bytes = base64.b64decode(image.b64_json)
+            image_path = await s3_uploader.upload_image(image_bytes)
+            await CardRequests.filter(id=request_id).update(revised_prompt=image.revised_prompt, result_image=image_path)
+
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
 
             await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
-            photo = BufferedInputFile(file=image_bytes, filename="card.png")
+            photo = URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_full_s3_url(image_path)), filename="card.png")
             await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup(), protect_content=True)
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
-            image_path = await s3_uploader.upload_image(image_bytes)
-            await CardRequests.filter(id=request_id).update(revised_prompt=image.revised_prompt, result_image=image_path)
-            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt, photo=photo, user=user,
+
+            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt,
+                            photo=photo, user=user,
                             debug_chat_id=debug_chat_id)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
@@ -218,7 +223,7 @@ async def process_description(message: types.Message, state: FSMContext, async_o
 
 
 async def process_depiction(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI, bot: Bot, settings: Settings,
-                            s3_uploader: S3Uploader) -> None:
+                            s3_uploader: S3Uploader, image_proxy: ImageProxy) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
     request_id = (await state.get_data())['request_id']
@@ -228,20 +233,24 @@ async def process_depiction(message: types.Message, state: FSMContext, async_ope
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
     await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale,
-                 client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader)
+                 client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot,
-                     async_openai_client: AsyncOpenAI, settings: Settings, s3_uploader: S3Uploader):
+                     async_openai_client: AsyncOpenAI, settings: Settings,
+                     s3_uploader: S3Uploader, image_proxy: ImageProxy):
     if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
         await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                     client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader)
+                     client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
 
 
-async def inline_query(query: types.InlineQuery, bot: Bot, settings: Settings) -> None:
+async def inline_query(query: types.InlineQuery, bot: Bot,
+                       s3_uploader: S3Uploader,
+                       image_proxy: ImageProxy,
+                       settings: Settings) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
@@ -255,16 +264,22 @@ async def inline_query(query: types.InlineQuery, bot: Bot, settings: Settings) -
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
         ]]
     )
+    thumbnail_width = 256
+    thumbnail_height = 256
     for request in requests:
-        photo_url = f"{settings.image_website_prefix}/{request.result_image}"
-        thumbnail_url = f"{settings.image_thumbnail_website_prefix}/{request.result_image}"
+        # photo_url = image_proxy.get_full_image(s3_uploader.get_full_s3_url(request.result_image))
+        # thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_full_s3_url(request.result_image), width=thumbnail_width, height=thumbnail_height)
+
+        photo_url = f"{settings.image_website_prefix}{s3_uploader.get_website_url(request.result_image)}"
+        thumbnail_url = f"{settings.image_thumbnail_website_prefix}{s3_uploader.get_website_url(request.result_image)}"
+
         logging.info(f"{photo_url=} {thumbnail_url=}")
         results.append(types.InlineQueryResultArticle(
             id=str(datetime.datetime.now()),
             title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
             description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
-            thumbnail_width=500,
-            thumbnail_height=500,
+            thumbnail_width=thumbnail_width,
+            thumbnail_height=thumbnail_height,
             thumbnail_url=thumbnail_url,
             input_message_content=types.InputTextMessageContent(
                 message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
