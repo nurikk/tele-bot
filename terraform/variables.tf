@@ -16,3 +16,11 @@ variable "IMGPROXY_KEY" {
 variable "IMGPROXY_SALT" {
   type = string
 }
+
+variable "DUCK_DNS_TOKEN" {
+  type = string
+}
+
+variable "DUCK_DNS_DOMAIN" {
+  type = string
+}
