@@ -9,7 +9,7 @@ from src.db import user_from_message
 from src.settings import Settings
 
 
-async def handle_new_user(message: types.Message, bot: Bot, cards_per_user: int = 5,   referred_by: int = None):
+async def handle_new_user(message: types.Message, bot: Bot, cards_per_user: int = 5, referred_by: int = None):
     await user_from_message(telegram_user=message.from_user, referred_by=referred_by, bot=bot, cards_per_user=cards_per_user)
 
     welcome_messages = [

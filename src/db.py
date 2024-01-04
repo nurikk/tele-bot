@@ -4,10 +4,9 @@ from enum import Enum
 
 import i18n
 from aiogram import types, Bot
-
-from tortoise.models import Model
 from tortoise import fields, Tortoise
 from tortoise.expressions import F as F_SQL
+from tortoise.models import Model
 
 
 async def handle_referral(user_id: int, bot: Bot = None, cards_per_user: int = 5):

@@ -1,23 +1,22 @@
 import asyncio
 import logging
-import sys
 import pathlib
+import sys
 from datetime import timedelta
 
 import i18n
-
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src.db import start
-from src.img import ImageProxy, ImageOptim
-from src.s3 import S3Uploader
-from src.settings import Settings
-from src.message_handlers.start import register as register_start_handler
+from src.img import ImageOptim
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
+from src.message_handlers.start import register as register_start_handler
+from src.s3 import S3Uploader
+from src.settings import Settings
 
 
 async def main(dispatcher: Dispatcher, telegram_bot_token: str, db_url: str) -> None:
