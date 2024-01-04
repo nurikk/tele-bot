@@ -12,7 +12,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src.db import start
-from src.img import ImageProxy
+from src.img import ImageProxy, ImageOptim
 from src.s3 import S3Uploader
 from src.settings import Settings
 from src.message_handlers.start import register as register_start_handler
@@ -46,9 +46,11 @@ if __name__ == "__main__":
                     settings=settings,
                     s3_uploader=S3Uploader(aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key,
                                            aws_region=settings.aws_region, s3_bucket_name=settings.s3_bucket_name),
-                    image_proxy=ImageProxy(imgproxy_hostname=settings.imgproxy_hostname,
-                                           imgproxy_port=settings.imgproxy_port,
-                                           imgproxy_key=settings.imgproxy_key,
-                                           imgproxy_salt=settings.imgproxy_salt))
+                    image_proxy=ImageOptim(account_id=settings.imageoptim_account_id),
+                    # image_proxy=ImageProxy(imgproxy_hostname=settings.imgproxy_hostname,
+                    #                        imgproxy_port=settings.imgproxy_port,
+                    #                        imgproxy_key=settings.imgproxy_key,
+                    #                        imgproxy_salt=settings.imgproxy_salt)
+                    )
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     asyncio.run(main(dispatcher=dp, telegram_bot_token=settings.telegram_bot_token, db_url=settings.db_url))

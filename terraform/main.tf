@@ -25,7 +25,7 @@ resource "aws_ecs_task_definition" "task" {
         "options" : {
           "awslogs-group" : aws_cloudwatch_log_group.logs.name,
           "awslogs-region" : data.aws_region.current.name,
-          "awslogs-stream-prefix" : "ecs"
+          "awslogs-stream-prefix" : "telebot"
         }
       },
       command : ["./bot.sh"],
@@ -65,12 +65,8 @@ resource "aws_ecs_task_definition" "task" {
           "value" : aws_iam_access_key.telebot_s3_uploader.secret
         },
         {
-          "name" : "IMAGE_THUMBNAIL_WEBSITE_PREFIX",
-          "value" : "https://img.gs/cbplcjplpn/256x256/"
-        },
-        {
-          "name" : "IMAGE_WEBSITE_PREFIX",
-          "value" : "https://img.gs/cbplcjplpn/full/"
+          "name" : "IMAGEOPTIM_ACCOUNT_ID",
+          "value" : var.IMAGEOPTIM_ACCOUNT_ID
         },
         {
           "name" : "NEW_RELIC_API_KEY",
@@ -85,8 +81,8 @@ resource "aws_ecs_task_definition" "task" {
           "value" : "EU"
         },
         {
-          "name": "IMGPROXY_HOSTNAME",
-          "value": "${var.DUCK_DNS_DOMAIN}.duckdns.org"
+          "name" : "IMGPROXY_HOSTNAME",
+          "value" : "${var.DUCK_DNS_DOMAIN}.duckdns.org"
         }
       ]
     },
@@ -183,17 +179,7 @@ resource "aws_ecs_task_definition" "task" {
         "-d=${var.DUCK_DNS_DOMAIN}.duckdns.org"
       ],
       environment : [
-      ],
-      #       mountPoints : [{
-      #         sourceVolume  = "letsencrypt-certs"
-      #         containerPath = "/etc/letsencrypt"
-      #         readOnly      = false
-      #         },
-      #         {
-      #           sourceVolume  = "letsencrypt-certs"
-      #           containerPath = "/var/lib/letsencrypt"
-      #           readOnly      = false
-      #       }]
+      ]
     }
   ])
 
@@ -251,10 +237,4 @@ resource "aws_ecs_service" "app_service" {
       aws_security_group.image_proxy_sg.id
     ]
   }
-
-  #  load_balancer {
-  #    target_group_arn = aws_lb_target_group.ecs_tg.arn
-  #    container_name   = "imageproxy"
-  #    container_port   = 8080
-  #  }
 }

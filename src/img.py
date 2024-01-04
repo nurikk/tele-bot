@@ -1,7 +1,28 @@
+import abc
+
 from imgproxy import ImgProxy
 
 
-class ImageProxy:
+class Proxy(abc.ABC):
+    def get_thumbnail(self, url: str, width=500, height=500) -> str:
+        raise NotImplementedError()
+
+    def get_full_image(self, url: str) -> str:
+        raise NotImplementedError()
+
+
+class ImageOptim(Proxy):
+    def __init__(self, account_id: str):
+        self.account_id = account_id
+
+    def get_thumbnail(self, url: str, width=500, height=500) -> str:
+        return f"https://img.gs/{self.account_id}/{width}x{height}/{url}"
+
+    def get_full_image(self, url: str) -> str:
+        return f"https://img.gs/{self.account_id}/full/{url}"
+
+
+class ImageProxy(Proxy):
     def __init__(self,
                  imgproxy_hostname: str,
                  imgproxy_port: str,

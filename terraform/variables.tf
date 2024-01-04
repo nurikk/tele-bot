@@ -24,3 +24,13 @@ variable "DUCK_DNS_TOKEN" {
 variable "DUCK_DNS_DOMAIN" {
   type = string
 }
+
+variable "LETSENCRYPT_EMAIL" {
+  type = string
+}
+
+
+variable "IMAGEOPTIM_ACCOUNT_ID" {
+  type = string
+
+}

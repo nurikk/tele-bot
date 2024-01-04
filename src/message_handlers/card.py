@@ -267,11 +267,8 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     thumbnail_width = 256
     thumbnail_height = 256
     for request in requests:
-        # photo_url = image_proxy.get_full_image(s3_uploader.get_full_s3_url(request.result_image))
-        # thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_full_s3_url(request.result_image), width=thumbnail_width, height=thumbnail_height)
-
-        photo_url = f"{settings.image_website_prefix}{s3_uploader.get_website_url(request.result_image)}"
-        thumbnail_url = f"{settings.image_thumbnail_website_prefix}{s3_uploader.get_website_url(request.result_image)}"
+        photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(request.result_image))
+        thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(request.result_image), width=thumbnail_width, height=thumbnail_height)
 
         logging.info(f"{photo_url=} {thumbnail_url=}")
         results.append(types.InlineQueryResultArticle(
