@@ -90,7 +90,7 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
 
             await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
-            photo = URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_full_s3_url(image_path)), filename="card.png")
+            photo = URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_path)), filename="card.png")
             await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup(), protect_content=True)
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
