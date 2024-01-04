@@ -83,6 +83,10 @@ resource "aws_ecs_task_definition" "task" {
         {
           "name" : "NEW_RELIC_REGION",
           "value" : "EU"
+        },
+        {
+          "name": "IMGPROXY_HOSTNAME",
+          "value": "${var.DUCK_DNS_DOMAIN}.duckdns.org"
         }
       ]
     },
@@ -146,14 +150,50 @@ resource "aws_ecs_task_definition" "task" {
       },
       environment : [
         {
-          "name": "TOKEN",
-          "value": var.DUCK_DNS_TOKEN
+          "name" : "TOKEN",
+          "value" : var.DUCK_DNS_TOKEN
         },
         {
-          "name": "SUBDOMAINS",
-          "value": var.DUCK_DNS_DOMAIN
+          "name" : "SUBDOMAINS",
+          "value" : var.DUCK_DNS_DOMAIN
         }
       ]
+    },
+    {
+      name : "certbot",
+      image : "ghcr.io/infinityofspace/certbot_dns_duckdns:v1.3",
+      essential : false,
+      logConfiguration : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
+          "awslogs-region" : data.aws_region.current.name,
+          "awslogs-stream-prefix" : "certbot"
+        }
+      },
+      command : [
+        "certonly",
+        "--non-interactive",
+        "--agree-tos",
+        "--email=${var.LETSENCRYPT_EMAIL}",
+        "--preferred-challenges dns",
+        "--authenticator dns-duckdns",
+        "--dns-duckdns-token=${var.DUCK_DNS_TOKEN}",
+        "--dns-duckdns-propagation-seconds 60",
+        "-d=${var.DUCK_DNS_DOMAIN}.duckdns.org"
+      ],
+      environment : [
+      ],
+      #       mountPoints : [{
+      #         sourceVolume  = "letsencrypt-certs"
+      #         containerPath = "/etc/letsencrypt"
+      #         readOnly      = false
+      #         },
+      #         {
+      #           sourceVolume  = "letsencrypt-certs"
+      #           containerPath = "/var/lib/letsencrypt"
+      #           readOnly      = false
+      #       }]
     }
   ])
 
@@ -212,9 +252,9 @@ resource "aws_ecs_service" "app_service" {
     ]
   }
 
-#  load_balancer {
-#    target_group_arn = aws_lb_target_group.ecs_tg.arn
-#    container_name   = "imageproxy"
-#    container_port   = 8080
-#  }
+  #  load_balancer {
+  #    target_group_arn = aws_lb_target_group.ecs_tg.arn
+  #    container_name   = "imageproxy"
+  #    container_port   = 8080
+  #  }
 }
