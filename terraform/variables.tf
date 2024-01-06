@@ -2,6 +2,10 @@ variable "OPENAI_API_KEY" {
   type = string
 }
 
+variable "REPLICATE_API_TOKEN" {
+  type = string
+}
+
 variable "TELEGRAM_BOT_TOKEN" {
   type = string
 }
@@ -32,5 +36,4 @@ variable "LETSENCRYPT_EMAIL" {
 
 variable "IMAGEOPTIM_ACCOUNT_ID" {
   type = string
-
 }

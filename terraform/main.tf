@@ -35,6 +35,10 @@ resource "aws_ecs_task_definition" "task" {
           "value" : var.OPENAI_API_KEY
         },
         {
+          "name" : "REPLICATE_API_TOKEN",
+          "value" : var.REPLICATE_API_TOKEN
+        },
+        {
           "name" : "TELEGRAM_BOT_TOKEN",
           "value" : var.TELEGRAM_BOT_TOKEN
         },
