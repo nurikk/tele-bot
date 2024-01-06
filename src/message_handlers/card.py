@@ -20,7 +20,7 @@ from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
 
 from src.commands import card_command
-from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers
+from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays
 from src.fsm.card import CardForm
 from src.img import ImageProxy
 from src.prompt_generator import generate_prompt
@@ -102,7 +102,7 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
             await bot.send_message(chat_id=chat_id, text=e.body['message'])
 
 
-def get_samples(question: CardRequestQuestions, locale: str) -> list[str]:
+async def get_samples(question: CardRequestQuestions, locale: str) -> list[str]:
     return i18n.t(f"card_form.{question.value}.samples", locale=locale).split(",")
 
 
@@ -113,8 +113,8 @@ def generate_samples_keyboard(samples: list[str], columns: int = 2) -> ReplyKeyb
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
 
 
-def generate_answer_samples_keyboard(locale: str, question: CardRequestQuestions, columns: int = 2) -> ReplyKeyboardMarkup:
-    samples = get_samples(question=question, locale=locale)
+async def generate_answer_samples_keyboard(locale: str, question: CardRequestQuestions, columns: int = 2) -> ReplyKeyboardMarkup:
+    samples = await get_samples(question=question, locale=locale)
     return generate_samples_keyboard(samples=samples, columns=columns)
 
 
@@ -187,6 +187,16 @@ async def ensure_user_has_cards(message: types.Message, user: types.User = None)
     return True
 
 
+async def generate_reason_samples_keyboard(locale: str):
+    current_date = datetime.datetime.now()
+    reasons = await Holidays.filter(country_code=locale, month=current_date.month, day__gte=current_date.day).order_by("day").limit(5).values("title", "month", "day")
+    samples = await get_samples(question=CardRequestQuestions.REASON, locale=locale)
+    for r in reasons:
+        month_name = i18n.t(f"month_names.month_{r['month']}", locale=locale)
+        samples.append(f"{r['title']} ({r['day']} {month_name})")
+    return generate_samples_keyboard(samples=samples, columns=1)
+
+
 async def command_start(message: types.Message, state: FSMContext) -> None:
     locale = message.from_user.language_code
     user = await user_from_message(telegram_user=message.from_user)
@@ -194,9 +204,8 @@ async def command_start(message: types.Message, state: FSMContext) -> None:
         request: CardRequests = await CardRequests.create(user=user, language_code=locale)
         await state.update_data(request_id=request.id)
         await state.set_state(CardForm.reason)
-        answer_samples_keyboard = generate_answer_samples_keyboard(
-            locale=locale, question=CardRequestQuestions.REASON, columns=1)
-        await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=answer_samples_keyboard)
+        reason_samples_keyboard = await generate_reason_samples_keyboard(locale=locale)
+        await message.answer(i18n.t("card_form.reason.response", locale=locale), reply_markup=reason_samples_keyboard)
 
 
 async def process_reason(message: types.Message, state: FSMContext) -> None:
@@ -204,7 +213,7 @@ async def process_reason(message: types.Message, state: FSMContext) -> None:
     request_id = (await state.get_data())['request_id']
     await CardRequestsAnswers.create(request_id=request_id, question=CardRequestQuestions.REASON, answer=message.text, language_code=locale)
     await state.set_state(CardForm.description)
-    answer_samples_keyboard = generate_answer_samples_keyboard(
+    answer_samples_keyboard = await generate_answer_samples_keyboard(
         locale=locale, question=CardRequestQuestions.DESCRIPTION, columns=4)
     await message.answer(i18n.t(f"card_form.{CardRequestQuestions.DESCRIPTION.value}.response", locale=locale), reply_markup=answer_samples_keyboard)
 

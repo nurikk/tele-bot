@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 from enum import Enum
@@ -70,6 +71,17 @@ class CardRequestsAnswers(Model):
     answer: str = fields.TextField()
 
 
+class Holidays(Model):
+    id: int = fields.IntField(pk=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+    updated_at: datetime.datetime = fields.DatetimeField(auto_now=True)
+
+    country_code: str = fields.TextField()
+    day: str = fields.IntField()
+    month: str = fields.IntField()
+    title: str = fields.TextField()
+
+
 TORTOISE_ORM = {
     "connections": {"default": os.environ.get('DB_URL', 'postgres://localhost:5432/telebot2')},
     "apps": {
@@ -91,3 +103,24 @@ async def start(db_url: str):
             },
         },
     }, use_tz=True)
+
+
+def normalise_month_name(month_name: str) -> int:
+    russian_months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"]
+    return russian_months.index(month_name) + 1
+
+
+async def load_holidays():
+    for country in ['ru']:
+        loaded_holidays = await Holidays.filter(country_code=country).count()
+        if loaded_holidays == 0:
+            logging.info(f"Loading holidays for {country}")
+            file_abs_path = os.path.join(os.path.dirname(__file__), f"holidays/{country}.json")
+            with open(file_abs_path) as f:
+                holidays = json.load(f)
+                for holiday in holidays:
+                    for title in holiday['titles']:
+                        await Holidays.create(country_code=country,
+                                              day=int(holiday['date_num']),
+                                              month=normalise_month_name(holiday['date_month']),
+                                              title=title)

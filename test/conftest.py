@@ -6,7 +6,7 @@ from dotenv import find_dotenv, load_dotenv
 from tortoise import Tortoise
 from tortoise.contrib.test import getDBConfig, _init_db
 
-from src.db import CardRequestQuestions, CardRequests, CardRequestsAnswers, TelebotUsers
+from src.db import CardRequestQuestions, CardRequests, CardRequestsAnswers, TelebotUsers, Holidays
 
 
 # @pytest.fixture(scope="session")
@@ -37,11 +37,13 @@ def db_mock(in_memory_db, event_loop):
             for x in range(1, 10):
                 request = await CardRequests.create(user=user)
                 for language_code in ['en', 'ru']:
+                    await Holidays.create(country_code=language_code, day=x, month=i, title=f'holiday {i} {x} {language_code}')
                     for question in all_questions:
                         await CardRequestsAnswers.create(request=request,
                                                          question=question,
                                                          answer=f'answer {i} {language_code} {question.value}',
                                                          language_code=language_code)
+
     event_loop.run_until_complete(code())
 
 

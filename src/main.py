@@ -10,7 +10,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
-from src.db import start
+from src import db
 from src.img import ImageOptim
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
@@ -20,8 +20,8 @@ from src.settings import Settings
 
 
 async def main(dispatcher: Dispatcher, telegram_bot_token: str, db_url: str) -> None:
-    # # I18nMiddleware() i18n
-    await start(db_url=db_url)
+    await db.start(db_url=db_url)
+    await db.load_holidays()
 
     register_start_handler(dispatcher)
     register_img_handler(dispatcher)

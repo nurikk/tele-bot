@@ -21,5 +21,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-asyncio = "*"
 
+requests-html2= "*"
+
 [requires]
 python_version = "3.11"
