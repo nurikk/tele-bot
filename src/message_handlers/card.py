@@ -22,19 +22,19 @@ from tortoise.functions import Max
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays
 from src.fsm.card import CardForm
+from src.image_generator import ImageGenerator
 from src.img import ImageProxy
 from src.prompt_generator import generate_prompt
 from src.s3 import S3Uploader
 from src.settings import Settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, prompt: str, revised_prompt: str,
+async def debug_log(prompt_data: dict, bot: Bot, prompt: str,
                     photo: InputFile, user: TelebotUsers, debug_chat_id: int):
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
         f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
-        f"Generated prompt:\n {hcode(prompt)}",
-        f"Revised prompt:\n {hcode(revised_prompt)}"
+        f"Generated prompt:\n {hcode(prompt)}"
     ]
     await bot.send_message(chat_id=debug_chat_id, text="\n".join(messages))
     await bot.send_photo(chat_id=debug_chat_id, photo=photo)
@@ -49,10 +49,6 @@ class CardGenerationCallback(CallbackData, prefix="my"):
     request_id: int
 
 
-async def generate_image(client: AsyncOpenAI, prompt: str, user_id: str) -> Image:
-    response = await client.images.generate(prompt=prompt, model="dall-e-3", response_format="b64_json", user=user_id)
-    img = response.data[0]  # Api only returns one image
-    return img
 
 
 def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilder:
@@ -72,7 +68,7 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return InlineKeyboardBuilder(markup=buttons)
 
 
-async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, client: AsyncOpenAI, debug_chat_id: int,
+async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, image_generator: ImageGenerator, debug_chat_id: int,
                  s3_uploader: S3Uploader, image_proxy: ImageProxy) -> None:
     answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
@@ -81,10 +77,9 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
 
     try:
         async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
-            image = await generate_image(prompt=prompt, user_id=str(user.id), client=client)
-            image_bytes = base64.b64decode(image.b64_json)
-            image_path = await s3_uploader.upload_image(image_bytes)
-            await CardRequests.filter(id=request_id).update(revised_prompt=image.revised_prompt, result_image=image_path)
+            image_url = await image_generator.generate(prompt=prompt)
+            image_path = await s3_uploader.upload_image_from_url(image_url=image_url)
+            await CardRequests.filter(id=request_id).update(result_image=image_path)
 
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
 
@@ -94,7 +89,7 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
 
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
 
-            await debug_log(prompt_data=data, bot=bot, prompt=prompt, revised_prompt=image.revised_prompt,
+            await debug_log(prompt_data=data, bot=bot, prompt=prompt,
                             photo=photo, user=user,
                             debug_chat_id=debug_chat_id)
     except BadRequestError as e:
@@ -230,8 +225,8 @@ async def process_description(message: types.Message, state: FSMContext, async_o
         await message.answer(i18n.t(f"card_form.{CardRequestQuestions.DEPICTION.value}.response", locale=locale), reply_markup=depiction_ideas)
 
 
-async def process_depiction(message: types.Message, state: FSMContext, async_openai_client: AsyncOpenAI, bot: Bot, settings: Settings,
-                            s3_uploader: S3Uploader, image_proxy: ImageProxy) -> None:
+async def process_depiction(message: types.Message, state: FSMContext, bot: Bot, settings: Settings,
+                            s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
     request_id = (await state.get_data())['request_id']
@@ -241,18 +236,18 @@ async def process_depiction(message: types.Message, state: FSMContext, async_ope
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
     await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale,
-                 client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
+                 image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot,
-                     async_openai_client: AsyncOpenAI, settings: Settings,
-                     s3_uploader: S3Uploader, image_proxy: ImageProxy):
+                    settings: Settings,
+                     s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator):
     if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
         await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                     client=async_openai_client, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
+                     image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
 
 
 async def inline_query(query: types.InlineQuery, bot: Bot,

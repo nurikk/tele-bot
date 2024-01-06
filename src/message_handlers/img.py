@@ -6,6 +6,7 @@ from openai import AsyncOpenAI
 
 from src.commands import img_command
 from src.fsm.img import ImgForm
+from src.image_generator import ImageGenerator
 
 
 def register(dp: Dispatcher):
@@ -17,15 +18,12 @@ def register(dp: Dispatcher):
         await message.answer("Hi there! What's your prompt?")
 
     @form_router.message(ImgForm.prompt)
-    async def process_dont_like_write_bots(message: types.Message, state: FSMContext, bot: Bot, async_openai_client: AsyncOpenAI) -> None:
+    async def process_dont_like_write_bots(message: types.Message, state: FSMContext, bot: Bot, image_generator: ImageGenerator) -> None:
         await message.answer("Hold my beer!")
         await state.clear()
         prompt = message.text
-        resp = await async_openai_client.images.generate(prompt=prompt, model="dall-e-3")
-        for img in resp.data:
-            image = URLInputFile(img.url, filename="img.png")
-
-            await bot.send_message(chat_id=message.chat.id, text=hcode(img.revised_prompt))
-            await bot.send_photo(chat_id=message.chat.id, photo=image)
+        resp = await image_generator.generate(prompt=prompt)
+        image = URLInputFile(resp, filename="img.png")
+        await bot.send_photo(chat_id=message.chat.id, photo=image)
 
     dp.include_router(form_router)
