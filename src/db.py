@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 from enum import Enum
 
 import i18n
@@ -70,7 +71,7 @@ class CardRequestsAnswers(Model):
 
 
 TORTOISE_ORM = {
-    "connections": {"default": 'settings.db_url'},
+    "connections": {"default": os.environ.get('DB_URL', 'postgres://localhost:5432/telebot2')},
     "apps": {
         "models": {
             "models": ["src.db", "aerich.models"],
