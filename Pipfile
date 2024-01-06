@@ -8,20 +8,21 @@ aiogram = "3.2.0"
 openai = "1.6.0"
 pydantic-settings = "2.1.0"
 python-i18n = { extras = ["YAML"], version = "0.3.9" }
-redis= "5.0.1"
+redis = "5.0.1"
 tortoise-orm = { extras = ["asyncpg"], version = "0.20.0" }
 #aerich = "0.7.2"
-aerich = {file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev"}
-aioboto3="12.1.0"
+aerich = { file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev" }
+aioboto3 = "12.1.0"
 imgproxy = "1.0.0"
-newrelic="*"
+replicate = "0.22.0"
+newrelic = "*"
 
 [dev-packages]
 pytest = "*"
 pytest-cov = "*"
 pytest-asyncio = "*"
 
-requests-html2= "*"
+requests-html2 = "*"
 
 [requires]
 python_version = "3.11"

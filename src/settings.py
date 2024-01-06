@@ -28,3 +28,5 @@ class Settings(pydantic_settings.BaseSettings):
     imgproxy_port: str = '8080'
     imgproxy_key: str = ''
     imgproxy_salt: str = ''
+
+    replicate_api_token: str = ''

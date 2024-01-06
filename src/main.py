@@ -11,7 +11,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src import db
-from src.image_generator import OpenAIGenerator
+from src.image_generator import OpenAIGenerator, ReplicateGenerator
 from src.img import ImageOptim
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
@@ -42,7 +42,8 @@ if __name__ == "__main__":
     init_i18n()
     settings = Settings()
     dp = Dispatcher(storage=RedisStorage.from_url(settings.redis_url, state_ttl=timedelta(days=settings.redis_ttl_days)),
-                    image_generator=OpenAIGenerator(api_key=settings.openai_api_key),
+                    # image_generator=OpenAIGenerator(api_key=settings.openai_api_key),
+                    image_generator=ReplicateGenerator(api_token=settings.replicate_api_token),
                     async_openai_client=AsyncOpenAI(api_key=settings.openai_api_key),
                     settings=settings,
                     s3_uploader=S3Uploader(aws_access_key_id=settings.aws_access_key_id, aws_secret_access_key=settings.aws_secret_access_key,

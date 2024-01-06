@@ -49,8 +49,6 @@ class CardGenerationCallback(CallbackData, prefix="my"):
     request_id: int
 
 
-
-
 def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilder:
     button_label = i18n.t('regenerate', locale=locale)
     callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
@@ -68,11 +66,34 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return InlineKeyboardBuilder(markup=buttons)
 
 
+async def ensure_english(text: str, locale: str, async_openai_client: AsyncOpenAI) -> str:
+    if locale != 'en':
+        response = await async_openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You will be provided with a sentence in Russian, and your task is to translate it into English."
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            temperature=0.7,
+            max_tokens=int(len(text) * 1.5),
+            top_p=1
+        )
+        return response.choices[0].message.content
+    return text
+
+
 async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, image_generator: ImageGenerator, debug_chat_id: int,
-                 s3_uploader: S3Uploader, image_proxy: ImageProxy) -> None:
+                 s3_uploader: S3Uploader, image_proxy: ImageProxy, async_openai_client: AsyncOpenAI) -> None:
     answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
-    prompt = generate_prompt(data=data, locale=locale)
+    prompt = await ensure_english(text=generate_prompt(data=data, locale=locale), locale=locale, async_openai_client=async_openai_client)
+
     await CardRequests.filter(id=request_id).update(generated_prompt=prompt)
 
     try:
@@ -184,7 +205,9 @@ async def ensure_user_has_cards(message: types.Message, user: types.User = None)
 
 async def generate_reason_samples_keyboard(locale: str):
     current_date = datetime.datetime.now()
-    reasons = await Holidays.filter(country_code=locale, month=current_date.month, day__gte=current_date.day).order_by("day").limit(5).values("title", "month", "day")
+    reasons = await Holidays.filter(country_code=locale, month=current_date.month, day__gte=current_date.day).order_by("day").limit(5).values("title",
+                                                                                                                                              "month",
+                                                                                                                                              "day")
     samples = await get_samples(question=CardRequestQuestions.REASON, locale=locale)
     for r in reasons:
         month_name = i18n.t(f"month_names.month_{r['month']}", locale=locale)
@@ -226,7 +249,8 @@ async def process_description(message: types.Message, state: FSMContext, async_o
 
 
 async def process_depiction(message: types.Message, state: FSMContext, bot: Bot, settings: Settings,
-                            s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator) -> None:
+                            s3_uploader: S3Uploader, image_proxy: ImageProxy,
+                            image_generator: ImageGenerator, async_openai_client: AsyncOpenAI) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
     request_id = (await state.get_data())['request_id']
@@ -236,18 +260,20 @@ async def process_depiction(message: types.Message, state: FSMContext, bot: Bot,
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
     await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale,
-                 image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
+                 image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy,
+                 async_openai_client=async_openai_client)
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot,
-                    settings: Settings,
-                     s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator):
+                     settings: Settings,
+                     s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator, async_openai_client: AsyncOpenAI):
     if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
         await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                     image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy)
+                     image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
+                     image_proxy=image_proxy, async_openai_client=async_openai_client)
 
 
 async def inline_query(query: types.InlineQuery, bot: Bot,
