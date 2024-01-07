@@ -82,6 +82,14 @@ class Holidays(Model):
     title: str = fields.TextField()
 
 
+async def get_near_holidays(country_code: str, days: int = 7) -> list[Holidays]:
+    current_date = datetime.datetime.now()
+    holidays = await Holidays.filter(country_code=country_code,
+                                     month=current_date.month,
+                                     day__gte=current_date.day).order_by("day").limit(days).all()
+    return holidays
+
+
 TORTOISE_ORM = {
     "connections": {"default": os.environ.get('DB_URL', 'postgres://localhost:5432/telebot2')},
     "apps": {

@@ -19,6 +19,7 @@ from openai.types import Image
 from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
 
+from src import db
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays
 from src.fsm.card import CardForm
@@ -204,14 +205,11 @@ async def ensure_user_has_cards(message: types.Message, user: types.User = None)
 
 
 async def generate_reason_samples_keyboard(locale: str):
-    current_date = datetime.datetime.now()
-    reasons = await Holidays.filter(country_code=locale, month=current_date.month, day__gte=current_date.day).order_by("day").limit(5).values("title",
-                                                                                                                                              "month",
-                                                                                                                                              "day")
+    reasons = await db.get_near_holidays(country_code=locale, days=7)
     samples = await get_samples(question=CardRequestQuestions.REASON, locale=locale)
     for r in reasons:
-        month_name = i18n.t(f"month_names.month_{r['month']}", locale=locale)
-        samples.append(f"{r['title']} ({r['day']} {month_name})")
+        month_name = i18n.t(f"month_names.month_{r.month}", locale=locale)
+        samples.append(f"{r.title} ({r.day} {month_name})")
     return generate_samples_keyboard(samples=samples, columns=1)
 
 
