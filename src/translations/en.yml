@@ -10,7 +10,7 @@ shared_title: "↘️ Click here to send a postcard"
 shared_description: "Postcard from %{name}"
 
 share_description: "Use buttons below to share or regenerate postcard"
-share_message_content_markdown: "[%{name} created a postcard for you](%{photo_url}) %{greeting_message}"
+share_message_content_markdown: "[%{reason}](%{photo_url}) %{greeting_message}"
 generate_your_own: "Create New Postcard 🎁"
 referral_bonus_granted: "You got 5 new cards for inviting a friend"
 commands:

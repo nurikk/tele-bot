@@ -11,7 +11,7 @@ shared_from: "%{name} отправил тебе открытку!"
 shared_title: "↘️ Жми сюда чтобы отправить открытку"
 shared_description: "Открытка от %{name}"
 share_description: "Используй кнопки ниже чтобы отправить или перерисовать открытку"
-share_message_content_markdown: "[%{name} создал открытку для тебя](%{photo_url}) %{greeting_message}"
+share_message_content_markdown: "[%{reason}](%{photo_url}) %{greeting_message}"
 card_form:
   reason:
     response: "Какой повод для открытки? (Выбери или отправь свою причину)"
