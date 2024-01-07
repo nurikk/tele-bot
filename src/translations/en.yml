@@ -18,7 +18,7 @@ commands:
 card_form:
   reason:
     response: "What's the reason of postcard?"
-    samples: "New Year 🎄,Christmas 🎅,Birthday 🎁"
+    samples: "Birthday 🎁"
   relationship:
     response: "What is your relationship with the person being congratulated?"
     samples: "friend,wife,husband,son,daughter,mom"
