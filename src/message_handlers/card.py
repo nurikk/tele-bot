@@ -261,6 +261,10 @@ async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback
                      image_proxy=image_proxy, async_openai_client=async_openai_client)
 
 
+def escape_markdown(text: str) -> str:
+    return re.sub(r'([_*[\]()~`>#+-=|{}.!])', r'\\\1', text)
+
+
 async def inline_query(query: types.InlineQuery, bot: Bot,
                        s3_uploader: S3Uploader,
                        image_proxy: ImageProxy,
@@ -296,7 +300,7 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
                 {"role": "user", "content": reason.answer},
             ]
         )
-        greeting_message = greeting_text.choices[0].message.content.strip().replace("!", '\\!').replace(".", '\\.')
+        greeting_message = greeting_text.choices[0].message.content
 
         for result in request.results:
             photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
@@ -314,8 +318,8 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
                 input_message_content=types.InputTextMessageContent(
                     message_text=i18n.t('share_message_content_markdown',
                                         locale=query.from_user.language_code,
-                                        reason=reason.answer,
-                                        name=query.from_user.full_name, photo_url=photo_url, greeting_message=greeting_message),
+                                        reason=escape_markdown(reason.answer),
+                                        name=query.from_user.full_name, photo_url=photo_url, greeting_message=escape_markdown(greeting_message)),
                     parse_mode="MarkdownV2",
                 ),
                 caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
