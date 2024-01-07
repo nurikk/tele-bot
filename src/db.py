@@ -132,7 +132,7 @@ def normalise_month_name(month_name: str) -> int:
 
 
 async def load_holidays():
-    for country in ['ru']:
+    for country in ['ru', 'en']:
         loaded_holidays = await Holidays.filter(country_code=country).count()
         if loaded_holidays == 0:
             logging.info(f"Loading holidays for {country}")
