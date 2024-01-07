@@ -94,7 +94,7 @@ async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, lo
                                        s3_uploader=s3_uploader, async_openai_client=async_openai_client)
             await send_photos(chat_id=chat_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
-            await bot.send_message(chat_id=chat_id, text=i18n.t('share', locale=locale), reply_markup=keyboard.as_markup())
+            await bot.send_message(chat_id=chat_id, text=i18n.t('share_description', locale=locale), reply_markup=keyboard.as_markup())
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
 
             await debug_log(request_id=request_id, bot=bot,
