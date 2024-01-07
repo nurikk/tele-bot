@@ -91,52 +91,6 @@ resource "aws_ecs_task_definition" "task" {
       ]
     },
     {
-      name : "imageproxy",
-      image : "darthsim/imgproxy:latest",
-      essential : false,
-      logConfiguration : {
-        "logDriver" : "awslogs",
-        "options" : {
-          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
-          "awslogs-region" : data.aws_region.current.name,
-          "awslogs-stream-prefix" : "imgproxy"
-        }
-      },
-      environment : [
-        {
-          "name" : "IMGPROXY_KEY",
-          "value" : var.IMGPROXY_KEY
-        },
-        {
-          "name" : "IMGPROXY_SALT",
-          "value" : var.IMGPROXY_SALT
-        },
-        {
-          "name" : "IMGPROXY_USE_S3",
-          "value" : "true"
-        },
-        {
-          "name" : "AWS_REGION",
-          "value" : data.aws_region.current.name
-        },
-        {
-          "name" : "AWS_ACCESS_KEY_ID",
-          "value" : aws_iam_access_key.telebot_s3_uploader.id
-        },
-        {
-          "name" : "AWS_SECRET_ACCESS_KEY",
-          "value" : aws_iam_access_key.telebot_s3_uploader.secret
-        }
-      ],
-      portMappings = [
-        {
-          containerPort = 8080
-          hostPort      = 8080
-          protocol      = "tcp"
-        }
-      ]
-    },
-    {
       name : "duckdns",
       image : "lscr.io/linuxserver/duckdns:latest",
       essential : false,
@@ -159,32 +113,6 @@ resource "aws_ecs_task_definition" "task" {
         }
       ]
     },
-    {
-      name : "certbot",
-      image : "ghcr.io/infinityofspace/certbot_dns_duckdns:v1.3",
-      essential : false,
-      logConfiguration : {
-        "logDriver" : "awslogs",
-        "options" : {
-          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
-          "awslogs-region" : data.aws_region.current.name,
-          "awslogs-stream-prefix" : "certbot"
-        }
-      },
-      command : [
-        "certonly",
-        "--non-interactive",
-        "--agree-tos",
-        "--email=${var.LETSENCRYPT_EMAIL}",
-        "--preferred-challenges dns",
-        "--authenticator dns-duckdns",
-        "--dns-duckdns-token=${var.DUCK_DNS_TOKEN}",
-        "--dns-duckdns-propagation-seconds 60",
-        "-d=${var.DUCK_DNS_DOMAIN}.duckdns.org"
-      ],
-      environment : [
-      ]
-    }
   ])
 
   requires_compatibilities = ["FARGATE"]
