@@ -3,8 +3,8 @@ import asyncio
 import logging
 from typing import Literal
 
-from openai import AsyncOpenAI
 import replicate
+from openai import AsyncOpenAI
 from replicate import identifier
 from replicate.exceptions import ModelError
 from replicate.run import _make_output_iterator

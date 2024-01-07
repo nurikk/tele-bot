@@ -11,7 +11,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src import db
-from src.image_generator import OpenAIGenerator, ReplicateGenerator
+from src.image_generator import ReplicateGenerator
 from src.img import ImageOptim
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler

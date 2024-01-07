@@ -1,30 +1,52 @@
-import base64
 import datetime
 import json
 import logging
 import re
 from enum import Enum
-from typing import Optional
 
 import i18n
 from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputFile, InputMediaPhoto
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputMediaPhoto
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.utils.markdown import hcode, hbold, hpre
+from aiogram.utils.markdown import hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
-from openai.types import Image
-from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
-from tortoise.query_utils import Prefetch
 
 from src import db, card_gen
 from src.commands import card_command
-from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays, CardResult
+from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, CardResult
+from src.fsm.card import CardForm
+from src.image_generator import ImageGenerator
+from src.img import ImageProxy
+from src.s3 import S3Uploader
+from src.settings import Settings
+import datetime
+import json
+import logging
+import re
+from enum import Enum
+
+import i18n
+from aiogram import types, Router, Bot, Dispatcher, F
+from aiogram.filters.callback_data import CallbackData
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputMediaPhoto
+from aiogram.utils.chat_action import ChatActionSender
+from aiogram.utils.deep_linking import create_start_link
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.markdown import hbold, hpre
+from openai import BadRequestError, AsyncOpenAI
+from tortoise.functions import Max
+
+from src import db, card_gen
+from src.commands import card_command
+from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, CardResult
 from src.fsm.card import CardForm
 from src.image_generator import ImageGenerator
 from src.img import ImageProxy
@@ -129,8 +151,7 @@ async def generate_depictions_samples_keyboard(client: AsyncOpenAI, locale: str,
                                                                CardRequestQuestions.RELATIONSHIP]
                                         ).values('answers__question', 'answers__answer')
 
-    answers_dict = {item['answers__question']
-                    : item['answers__answer'] for item in answers}
+    answers_dict = {item['answers__question']: item['answers__answer'] for item in answers}
 
     prompt = i18n.t("card_form.depiction.depiction_prompt", locale=locale,
                     reason=answers_dict.get(CardRequestQuestions.REASON, ""),

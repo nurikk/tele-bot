@@ -1,8 +1,8 @@
 from openai import AsyncOpenAI
+from tortoise.expressions import F
 
 from src import db
 from src.image_generator import ImageGenerator
-from tortoise.expressions import F
 from src.prompt_generator import generate_prompt
 from src.s3 import S3Uploader
 

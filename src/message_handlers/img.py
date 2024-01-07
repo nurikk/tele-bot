@@ -1,8 +1,6 @@
 from aiogram import types, Router, Dispatcher, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import URLInputFile
-from aiogram.utils.markdown import hcode
-from openai import AsyncOpenAI
 
 from src.commands import img_command
 from src.fsm.img import ImgForm
