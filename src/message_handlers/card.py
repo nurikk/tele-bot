@@ -2,6 +2,7 @@ import base64
 import datetime
 import json
 import logging
+import re
 from enum import Enum
 from typing import Optional
 
@@ -263,7 +264,8 @@ async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback
 async def inline_query(query: types.InlineQuery, bot: Bot,
                        s3_uploader: S3Uploader,
                        image_proxy: ImageProxy,
-                       settings: Settings) -> None:
+                       settings: Settings,
+                       async_openai_client: AsyncOpenAI) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
@@ -277,9 +279,25 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
         ]]
     )
+
     thumbnail_width = 256
     thumbnail_height = 256
     for request in requests:
+        reason = await CardRequestsAnswers.filter(request_id=request.id, question=CardRequestQuestions.REASON).first()
+        greeting_text = await async_openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": ",".join([
+                    "You are a helpful assistant",
+                    "User will provide a holiday name and you have to generate a short greeting for a postcard"
+                    "Don't add much details, just two short sentences separated by a semicolon",
+                    "Produce output in the same language as the prompt"]
+                )},
+                {"role": "user", "content": reason.answer},
+            ]
+        )
+        greeting_message = greeting_text.choices[0].message.content.strip().replace("!", '\\!').replace(".", '\\.')
+
         for result in request.results:
             photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
             thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(result.result_image), width=thumbnail_width,
@@ -295,7 +313,7 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
                 thumbnail_url=thumbnail_url,
                 input_message_content=types.InputTextMessageContent(
                     message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
-                                        name=query.from_user.full_name, photo_url=photo_url),
+                                        name=query.from_user.full_name, photo_url=photo_url, greeting_message=greeting_message),
                     parse_mode="MarkdownV2",
                 ),
                 caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
