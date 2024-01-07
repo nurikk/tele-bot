@@ -3,13 +3,14 @@ import datetime
 import json
 import logging
 from enum import Enum
+from typing import Optional
 
 import i18n
 from aiogram import types, Router, Bot, Dispatcher, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputFile
+    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputFile, InputMediaPhoto
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -18,27 +19,33 @@ from openai import BadRequestError, AsyncOpenAI
 from openai.types import Image
 from tortoise.expressions import F as F_SQL
 from tortoise.functions import Max
+from tortoise.query_utils import Prefetch
 
-from src import db
+from src import db, card_gen
 from src.commands import card_command
-from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays
+from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, Holidays, CardResult
 from src.fsm.card import CardForm
 from src.image_generator import ImageGenerator
 from src.img import ImageProxy
-from src.prompt_generator import generate_prompt
 from src.s3 import S3Uploader
 from src.settings import Settings
 
 
-async def debug_log(prompt_data: dict, bot: Bot, prompt: str,
-                    photo: InputFile, user: TelebotUsers, debug_chat_id: int):
+async def debug_log(request_id: int, bot: Bot,
+                    user: TelebotUsers, debug_chat_id: int, s3_uploader: S3Uploader, image_proxy: ImageProxy):
+    card_request = await CardRequests.get(id=request_id)
+    answers = await db.CardRequestsAnswers.filter(request_id=request_id).all()
+    prompt_data = ''
+    for item in answers:
+        prompt_data += f"{item.question.value}: {item.answer}\n"
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
-        f"User response: \n {hpre(json.dumps(prompt_data, indent=4))}",
-        f"Generated prompt:\n {hcode(prompt)}"
+        f"User response: \n {hpre(prompt_data)}",
+        f"Generated prompt:\n {hpre(card_request.generated_prompt)}"
     ]
     await bot.send_message(chat_id=debug_chat_id, text="\n".join(messages))
-    await bot.send_photo(chat_id=debug_chat_id, photo=photo)
+
+    await send_photos(chat_id=debug_chat_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
 
 
 class Action(str, Enum):
@@ -54,7 +61,7 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     button_label = i18n.t('regenerate', locale=locale)
     callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
     buttons = [
-        # [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
+        [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
         [InlineKeyboardButton(
             text=i18n.t("share_with_friend", locale=locale),
             switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
@@ -67,53 +74,32 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return InlineKeyboardBuilder(markup=buttons)
 
 
-async def ensure_english(text: str, locale: str, async_openai_client: AsyncOpenAI) -> str:
-    if locale != 'en':
-        response = await async_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You will be provided with a sentence in Russian, and your task is to translate it into English."
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ],
-            temperature=0.7,
-            max_tokens=int(len(text) * 1.5),
-            top_p=1
-        )
-        return response.choices[0].message.content
-    return text
+async def send_photos(chat_id: int, request_id: int, image_proxy: ImageProxy, s3_uploader: S3Uploader, bot: Bot):
+    image_results = await CardResult.filter(request_id=request_id).all()
+
+    photos = [
+        InputMediaPhoto(
+            media=URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_result.result_image)), filename="card.png"))
+        for
+        image_result in image_results]
+
+    await bot.send_media_group(chat_id=chat_id, media=photos, protect_content=True)  # reply_markup=keyboard.as_markup()
 
 
 async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, image_generator: ImageGenerator, debug_chat_id: int,
                  s3_uploader: S3Uploader, image_proxy: ImageProxy, async_openai_client: AsyncOpenAI) -> None:
-    answers = await CardRequestsAnswers.filter(request_id=request_id).all().values()
-    data = {item['question'].value: item['answer'] for item in answers}
-    prompt = await ensure_english(text=generate_prompt(data=data, locale=locale), locale=locale, async_openai_client=async_openai_client)
-
-    await CardRequests.filter(id=request_id).update(generated_prompt=prompt)
-
     try:
         async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
-            image_url = await image_generator.generate(prompt=prompt)
-            image_path = await s3_uploader.upload_image_from_url(image_url=image_url)
-            await CardRequests.filter(id=request_id).update(result_image=image_path)
-
+            await card_gen.render_card(request_id=request_id, user=user, locale=locale, image_generator=image_generator,
+                                       s3_uploader=s3_uploader, async_openai_client=async_openai_client)
+            await send_photos(chat_id=chat_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
-
-            await TelebotUsers.filter(id=user.id).update(remaining_cards=F_SQL("remaining_cards") - 1)
-            photo = URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_path)), filename="card.png")
-            await bot.send_photo(chat_id=chat_id, photo=photo, reply_markup=keyboard.as_markup(), protect_content=True)
-
+            await bot.send_message(chat_id=chat_id, text=i18n.t('share', locale=locale), reply_markup=keyboard.as_markup())
             await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
 
-            await debug_log(prompt_data=data, bot=bot, prompt=prompt,
-                            photo=photo, user=user,
-                            debug_chat_id=debug_chat_id)
+            await debug_log(request_id=request_id, bot=bot,
+                            user=user,
+                            debug_chat_id=debug_chat_id, image_proxy=image_proxy, s3_uploader=s3_uploader)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
             await bot.send_message(chat_id=chat_id, text=e.body['message'])
@@ -282,10 +268,10 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
     results = []
-    request_qs = CardRequests.filter(result_image__isnull=False, user=user).order_by("-created_at")
+    request_qs = CardRequests.filter(user=user).prefetch_related('results').order_by("-created_at")
     if request_id:
         request_qs = request_qs.filter(id=request_id)
-    requests = await request_qs.limit(8)
+    requests = await request_qs.limit(10)
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
@@ -294,25 +280,27 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     thumbnail_width = 256
     thumbnail_height = 256
     for request in requests:
-        photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(request.result_image))
-        thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(request.result_image), width=thumbnail_width, height=thumbnail_height)
+        for result in request.results:
+            photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
+            thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(result.result_image), width=thumbnail_width,
+                                                      height=thumbnail_height)
 
-        logging.info(f"{photo_url=} {thumbnail_url=}")
-        results.append(types.InlineQueryResultArticle(
-            id=str(datetime.datetime.now()),
-            title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
-            description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
-            thumbnail_width=thumbnail_width,
-            thumbnail_height=thumbnail_height,
-            thumbnail_url=thumbnail_url,
-            input_message_content=types.InputTextMessageContent(
-                message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
-                                    name=query.from_user.full_name, photo_url=photo_url),
-                parse_mode="MarkdownV2",
-            ),
-            caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
-            reply_markup=reply_markup,
-        ))
+            logging.info(f"{photo_url=} {thumbnail_url=}")
+            results.append(types.InlineQueryResultArticle(
+                id=str(datetime.datetime.now()),
+                title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
+                description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
+                thumbnail_width=thumbnail_width,
+                thumbnail_height=thumbnail_height,
+                thumbnail_url=thumbnail_url,
+                input_message_content=types.InputTextMessageContent(
+                    message_text=i18n.t('share_message_content_markdown', locale=query.from_user.language_code,
+                                        name=query.from_user.full_name, photo_url=photo_url),
+                    parse_mode="MarkdownV2",
+                ),
+                caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
+                reply_markup=reply_markup,
+            ))
 
     await query.answer(results=results, cache_time=0)
 
