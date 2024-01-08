@@ -76,7 +76,7 @@ class ReplicateGenerator(ImageGenerator):
                 "scheduler": "K_EULER_ANCESTRAL",
                 "guidance_scale": 3,
                 "apply_watermark": False,
-                "negative_prompt": "",
+                "negative_prompt": "ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face",
                 "num_inference_steps": 50
             }
         ) for _ in range(images_count)]
