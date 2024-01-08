@@ -5,7 +5,7 @@ import pytest
 from src.db import CardRequests, CardRequestsAnswers, TelebotUsers, CardRequestQuestions
 from src.main import init_i18n
 
-from src.message_handlers.card import generate_descriptions_samples_keyboard, generate_depictions_samples_keyboard, finish, command_start, \
+from src.message_handlers.card import generate_descriptions_samples_keyboard, generate_depictions_samples_keyboard, deliver_generated_samples_to_user, command_start, \
     generate_reason_samples_keyboard
 
 
@@ -33,8 +33,8 @@ async def test_finish_decrease_cards(db_mock, mock_open_ai_client):
     # await db_mock
     user = await TelebotUsers.filter(id=1).first()
     assert user.remaining_cards == 5
-    await finish(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client, debug_chat_id=1, s3_uploader=AsyncMock())
-    await finish(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client, debug_chat_id=1, s3_uploader=AsyncMock())
+    await deliver_generated_samples_to_user(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client, debug_chat_id=1, s3_uploader=AsyncMock())
+    await deliver_generated_samples_to_user(chat_id=1, request_id=1, locale='en', user=user, bot=AsyncMock(), client=mock_open_ai_client, debug_chat_id=1, s3_uploader=AsyncMock())
     user = await TelebotUsers.filter(id=1).first()
     assert user.remaining_cards == 3
 

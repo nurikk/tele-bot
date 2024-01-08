@@ -7,7 +7,7 @@ share_with_friend: "Share with friend"
 shared_from: "%{name} shared a postcard with you!"
 
 shared_title: "↘️ Click here to send a postcard"
-shared_description: "Postcard from %{name}"
+shared_description: "%{reason} from %{name}"
 
 share_description: "Use buttons below to share or regenerate postcard"
 share_message_content_markdown: "[%{reason}](%{photo_url}) %{greeting_message}"
@@ -35,10 +35,10 @@ card_form:
   wait:
     response: "Drawing! Please wait a little"
 
-prompt: "Create a %{reason} greeting picture.
+prompt: "A %{reason} greeting picture.
  This person looks like %{description}. 
  Depict %{depiction}. 
- %{reason}. Add fireworks"
+ Add fireworks"
 
 month_names:
   month_1: January
@@ -53,3 +53,6 @@ month_names:
   month_10: October
   month_11: November
   month_12: December
+
+card_auto_generator:
+  description: ""

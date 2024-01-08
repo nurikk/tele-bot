@@ -66,6 +66,8 @@ class CardRequests(Model):
     user = fields.ForeignKeyField("models.TelebotUsers", related_name="requests", index=True)
     generated_prompt: str = fields.TextField(null=True)
     revised_prompt: str = fields.TextField(null=True)
+    greeting_text: str = fields.TextField(null=True)
+    shares_count: int = fields.IntField(default=0)
 
 
 class CardResult(Model):

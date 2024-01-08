@@ -1,5 +1,6 @@
+from src.prompt_generator import get_depiction_ideas
+from src.img import Proxy
 import datetime
-import json
 import logging
 import re
 from enum import Enum
@@ -22,40 +23,12 @@ from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, CardResult
 from src.fsm.card import CardForm
 from src.image_generator import ImageGenerator
-from src.img import ImageProxy
-from src.s3 import S3Uploader
-from src.settings import Settings
-import datetime
-import json
-import logging
-import re
-from enum import Enum
-
-import i18n
-from aiogram import types, Router, Bot, Dispatcher, F
-from aiogram.filters.callback_data import CallbackData
-from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove, InlineKeyboardButton, \
-    InlineKeyboardMarkup, SwitchInlineQueryChosenChat, URLInputFile, InputMediaPhoto
-from aiogram.utils.chat_action import ChatActionSender
-from aiogram.utils.deep_linking import create_start_link
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.utils.markdown import hbold, hpre
-from openai import BadRequestError, AsyncOpenAI
-from tortoise.functions import Max
-
-from src import db, card_gen
-from src.commands import card_command
-from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, CardResult
-from src.fsm.card import CardForm
-from src.image_generator import ImageGenerator
-from src.img import ImageProxy
 from src.s3 import S3Uploader
 from src.settings import Settings
 
 
 async def debug_log(request_id: int, bot: Bot,
-                    user: TelebotUsers, debug_chat_id: int, s3_uploader: S3Uploader, image_proxy: ImageProxy):
+                    user: TelebotUsers, debug_chat_id: int, s3_uploader: S3Uploader, image_proxy: Proxy):
     card_request = await CardRequests.get(id=request_id)
     answers = await db.CardRequestsAnswers.filter(request_id=request_id).all()
     prompt_data = ''
@@ -84,7 +57,7 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     button_label = i18n.t('regenerate', locale=locale)
     callback_data = CardGenerationCallback(action=Action.ACTION_REGENERATE, request_id=request_id).pack()
     buttons = [
-        [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
+        # [InlineKeyboardButton(text=button_label, callback_data=callback_data)],
         [InlineKeyboardButton(
             text=i18n.t("share_with_friend", locale=locale),
             switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(allow_user_chats=True,
@@ -97,35 +70,39 @@ def generate_image_keyboad(locale: str, request_id: int) -> InlineKeyboardBuilde
     return InlineKeyboardBuilder(markup=buttons)
 
 
-async def send_photos(chat_id: int, request_id: int, image_proxy: ImageProxy, s3_uploader: S3Uploader, bot: Bot):
+async def send_photos(chat_id: int, request_id: int, image_proxy: Proxy, s3_uploader: S3Uploader, bot: Bot):
     image_results = await CardResult.filter(request_id=request_id).all()
 
     photos = [
         InputMediaPhoto(
-            media=URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_result.result_image)), filename="card.png"))
-        for
-        image_result in image_results]
+            media=URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_result.result_image)), filename="card.png")
+        )
+        for image_result in image_results
+    ]
 
     await bot.send_media_group(chat_id=chat_id, media=photos, protect_content=True)  # reply_markup=keyboard.as_markup()
 
 
-async def finish(chat_id: int, request_id: int, bot: Bot, user: TelebotUsers, locale: str, image_generator: ImageGenerator, debug_chat_id: int,
-                 s3_uploader: S3Uploader, image_proxy: ImageProxy, async_openai_client: AsyncOpenAI) -> None:
+async def deliver_generated_samples_to_user(request_id: int, bot: Bot, user: TelebotUsers, locale: str,
+                                            image_generator: ImageGenerator, debug_chat_id: int,
+                                            s3_uploader: S3Uploader, image_proxy: Proxy, async_openai_client: AsyncOpenAI) -> None:
     try:
-        async with ChatActionSender.upload_photo(bot=bot, chat_id=chat_id):
+        async with ChatActionSender.upload_photo(bot=bot, chat_id=user.telegram_id):
             await card_gen.render_card(request_id=request_id, user=user, locale=locale, image_generator=image_generator,
                                        s3_uploader=s3_uploader, async_openai_client=async_openai_client)
-            await send_photos(chat_id=chat_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
+            request = await CardRequests.get(id=request_id)
+            await bot.send_message(chat_id=user.telegram_id, text=request.greeting_text)
+            await send_photos(chat_id=user.telegram_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
             keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
-            await bot.send_message(chat_id=chat_id, text=i18n.t('share_description', locale=locale), reply_markup=keyboard.as_markup())
-            await bot.send_message(chat_id=chat_id, text=i18n.t('commands.card', locale=locale))
+            await bot.send_message(chat_id=user.telegram_id, text=i18n.t('share_description', locale=locale), reply_markup=keyboard.as_markup())
+            await bot.send_message(chat_id=user.telegram_id, text=i18n.t('commands.card', locale=locale))
 
             await debug_log(request_id=request_id, bot=bot,
                             user=user,
                             debug_chat_id=debug_chat_id, image_proxy=image_proxy, s3_uploader=s3_uploader)
     except BadRequestError as e:
         if isinstance(e.body, dict) and 'message' in e.body:
-            await bot.send_message(chat_id=chat_id, text=e.body['message'])
+            await bot.send_message(chat_id=user.telegram_id, text=e.body['message'])
 
 
 async def get_samples(question: CardRequestQuestions, locale: str) -> list[str]:
@@ -145,31 +122,8 @@ async def generate_answer_samples_keyboard(locale: str, question: CardRequestQue
 
 
 async def generate_depictions_samples_keyboard(client: AsyncOpenAI, locale: str, request_id: int) -> ReplyKeyboardMarkup:
-    answers = await CardRequests.filter(id=request_id,
-                                        answers__language_code=locale,
-                                        answers__question__in=[CardRequestQuestions.DESCRIPTION, CardRequestQuestions.REASON,
-                                                               CardRequestQuestions.RELATIONSHIP]
-                                        ).values('answers__question', 'answers__answer')
+    samples = await get_depiction_ideas(client=client, locale=locale, request_id=request_id)
 
-    answers_dict = {item['answers__question']: item['answers__answer'] for item in answers}
-
-    prompt = i18n.t("card_form.depiction.depiction_prompt", locale=locale,
-                    reason=answers_dict.get(CardRequestQuestions.REASON, ""),
-                    relationship=answers_dict.get(CardRequestQuestions.RELATIONSHIP, ""),
-                    description=answers_dict.get(CardRequestQuestions.DESCRIPTION, ""))
-    stream = await client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system",
-             "content": "You are a AI designed for postcard depiction ideas generation. You have to give five short funny ideas for a depiction. Don't add any details, just two short ideas. Don't add numerals or headings. Format output as a valid json array. Produce ideas in the same language as the prompt."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    samples = []
-    try:
-        samples = json.loads(stream.choices[0].message.content)
-    except json.decoder.JSONDecodeError:
-        pass
     return generate_samples_keyboard(samples=samples, columns=1)
 
 
@@ -255,7 +209,7 @@ async def process_description(message: types.Message, state: FSMContext, async_o
 
 
 async def process_depiction(message: types.Message, state: FSMContext, bot: Bot, settings: Settings,
-                            s3_uploader: S3Uploader, image_proxy: ImageProxy,
+                            s3_uploader: S3Uploader, image_proxy: Proxy,
                             image_generator: ImageGenerator, async_openai_client: AsyncOpenAI) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
@@ -265,32 +219,40 @@ async def process_depiction(message: types.Message, state: FSMContext, bot: Bot,
 
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
-    await finish(chat_id=message.chat.id, request_id=request_id, bot=bot, user=user, locale=locale,
-                 image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader, image_proxy=image_proxy,
-                 async_openai_client=async_openai_client)
+    await deliver_generated_samples_to_user(request_id=request_id, bot=bot, user=user, locale=locale,
+                                            image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
+                                            image_proxy=image_proxy,
+                                            async_openai_client=async_openai_client)
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardGenerationCallback, bot: Bot,
                      settings: Settings,
-                     s3_uploader: S3Uploader, image_proxy: ImageProxy, image_generator: ImageGenerator, async_openai_client: AsyncOpenAI):
+                     s3_uploader: S3Uploader, image_proxy: Proxy, image_generator: ImageGenerator, async_openai_client: AsyncOpenAI):
     if await ensure_user_has_cards(message=query.message, user=query.from_user):
         user = await user_from_message(telegram_user=query.from_user)
         locale = query.from_user.language_code
         await query.answer(text=i18n.t("card_form.wait.response", locale=locale))
-        await finish(chat_id=query.message.chat.id, request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                     image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
-                     image_proxy=image_proxy, async_openai_client=async_openai_client)
+        await deliver_generated_samples_to_user(request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
+                                                image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
+                                                image_proxy=image_proxy, async_openai_client=async_openai_client)
 
 
 def escape_markdown(text: str) -> str:
     return re.sub(r'([_*[\]()~`>#+-=|{}.!])', r'\\\1', text)
 
 
+def get_message_content(locale: str, reason: CardRequestsAnswers, full_name: str, photo_url: str, greeting_text: str) -> str:
+    return i18n.t('share_message_content_markdown',
+                  locale=locale,
+                  reason=escape_markdown(reason.answer),
+                  name=escape_markdown(full_name),
+                  photo_url=photo_url,
+                  greeting_message=escape_markdown(greeting_text) if greeting_text else '')
+
+
 async def inline_query(query: types.InlineQuery, bot: Bot,
                        s3_uploader: S3Uploader,
-                       image_proxy: ImageProxy,
-                       settings: Settings,
-                       async_openai_client: AsyncOpenAI) -> None:
+                       image_proxy: Proxy) -> None:
     user = await user_from_message(telegram_user=query.from_user)
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
@@ -309,19 +271,6 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     thumbnail_height = 256
     for request in requests:
         reason = await CardRequestsAnswers.filter(request_id=request.id, question=CardRequestQuestions.REASON).first()
-        greeting_text = await async_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": ",".join([
-                    "You are a helpful assistant",
-                    "User will provide a holiday name and you have to generate a short greeting for a postcard"
-                    "Don't add much details, just two short sentences separated by a semicolon",
-                    "Produce output in the same language as the prompt"]
-                )},
-                {"role": "user", "content": reason.answer},
-            ]
-        )
-        greeting_message = greeting_text.choices[0].message.content
 
         for result in request.results:
             photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
@@ -332,17 +281,15 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
             results.append(types.InlineQueryResultArticle(
                 id=str(datetime.datetime.now()),
                 title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
-                description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name),
+                description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name, reason=reason.answer),
                 thumbnail_width=thumbnail_width,
                 thumbnail_height=thumbnail_height,
                 thumbnail_url=thumbnail_url,
                 input_message_content=types.InputTextMessageContent(
-                    message_text=i18n.t('share_message_content_markdown',
-                                        locale=query.from_user.language_code,
-                                        reason=escape_markdown(reason.answer),
-                                        name=escape_markdown(query.from_user.full_name),
-                                        photo_url=photo_url,
-                                        greeting_message=escape_markdown(greeting_message)),
+                    message_text=get_message_content(locale=query.from_user.language_code, reason=reason,
+                                                     full_name=query.from_user.full_name,
+                                                     photo_url=photo_url,
+                                                     greeting_text=request.greeting_text),
                     parse_mode="MarkdownV2",
                 ),
                 caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
@@ -353,7 +300,10 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
 
 
 async def chosen_inline_result_handler(chosen_inline_result: types.ChosenInlineResult):
-    pass
+    request_id = chosen_inline_result.query
+    if request_id:
+        from tortoise.expressions import F
+        await db.CardRequests.filter(id=request_id).update(shares_count=F("shares_count") + 1)
 
 
 async def edited_message_handler(edited_message: types.Message):

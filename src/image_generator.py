@@ -9,6 +9,7 @@ from replicate import identifier
 from replicate.exceptions import ModelError
 from replicate.run import _make_output_iterator
 from replicate.version import Versions
+from tqdm.asyncio import tqdm
 
 
 class ImageGenerator(abc.ABC):
@@ -80,5 +81,5 @@ class ReplicateGenerator(ImageGenerator):
             }
         ) for _ in range(images_count)]
         logging.info(f"Starting {len(futures)} image generation tasks")
-        results = await asyncio.gather(*futures)
+        results = await tqdm.gather(*futures)
         return [r[0] for r in results]

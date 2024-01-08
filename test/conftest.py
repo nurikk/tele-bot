@@ -32,6 +32,7 @@ def db_mock(in_memory_db, event_loop):
         all_questions = [CardRequestQuestions.DESCRIPTION,
                          CardRequestQuestions.REASON,
                          CardRequestQuestions.RELATIONSHIP]
+
         for i in range(1, 10):
             user = await TelebotUsers.create(id=i, telegram_id=i, username=f'test_user {i}', full_name=f'Test User {i}')
             for x in range(1, 10):
@@ -43,6 +44,8 @@ def db_mock(in_memory_db, event_loop):
                                                          question=question,
                                                          answer=f'answer {i} {language_code} {question.value}',
                                                          language_code=language_code)
+
+        await TelebotUsers.create(telegram_id=309511727, username='anonymass', full_name=f'Anonymass')
 
     event_loop.run_until_complete(code())
 
