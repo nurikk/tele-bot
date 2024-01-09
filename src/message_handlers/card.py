@@ -166,8 +166,7 @@ async def generate_reason_samples_keyboard(locale: str):
     reasons = await db.get_near_holidays(country_code=locale, days=7)
     samples = await get_samples(question=CardRequestQuestions.REASON, locale=locale)
     for r in reasons:
-        month_name = i18n.t(f"month_names.month_{r.month}", locale=locale)
-        samples.append(f"{r.title} ({r.day} {month_name})")
+        samples.append(r.full_title())
     return generate_samples_keyboard(samples=samples, columns=1)
 
 

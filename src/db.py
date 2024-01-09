@@ -92,6 +92,9 @@ class Holidays(Model):
     month: str = fields.IntField()
     title: str = fields.TextField()
 
+    def full_title(self):
+        return f"{self.title} ({self.day} {i18n.t(f'month_names.month_{self.month}', locale=self.country_code)})"
+
 
 async def get_near_holidays(country_code: str, days: int = 7) -> list[Holidays]:
     current_date = datetime.datetime.now()

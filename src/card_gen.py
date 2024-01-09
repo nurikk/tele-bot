@@ -65,7 +65,7 @@ async def generate_cards(image_generator: ImageGenerator, s3_uploader: S3Uploade
 
             await db.CardRequestsAnswers.create(request_id=card_request.id,
                                                 question=db.CardRequestQuestions.REASON,
-                                                answer=holiday.title,
+                                                answer=holiday.full_title(),
                                                 language_code=locale)
 
             await db.CardRequestsAnswers.create(request_id=card_request.id,
