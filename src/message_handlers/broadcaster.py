@@ -1,6 +1,7 @@
 import logging
 
 from aiogram import Dispatcher, Bot, Router, F
+from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import Message
 from openai import AsyncOpenAI
 
@@ -50,15 +51,19 @@ async def broadcast_handler(message: Message,
         recipients = await db.TelebotUsers.filter(id__in=user_ids).all()
         for recipient in recipients:
             logging.info(f'Sending card to {recipient.full_name} {recipient.id} {recipient.telegram_id}')
-            await deliver_generated_samples_to_user(
-                request_id=callback_data.request_id,
-                user=recipient,
-                locale=locale,
-                debug_chat_id=None,
-                s3_uploader=s3_uploader,
-                image_proxy=image_proxy,
-                bot=bot
-            )
+            try:
+                await deliver_generated_samples_to_user(
+                    request_id=callback_data.request_id,
+                    user=recipient,
+                    locale=locale,
+                    debug_chat_id=None,
+                    s3_uploader=s3_uploader,
+                    image_proxy=image_proxy,
+                    bot=bot
+                )
+            except TelegramForbiddenError as ex:
+                logging.error(str(ex))
+                await db.TelebotUsers.filter(id=recipient.id).update(is_stopped=True)
 
 
 def register(dp: Dispatcher):
