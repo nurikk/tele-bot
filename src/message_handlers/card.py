@@ -1,8 +1,3 @@
-from tortoise.expressions import Q
-
-from src.card_actions import Action, CardActionCallback
-from src.prompt_generator import get_depiction_ideas
-from src.img import Proxy
 import datetime
 import logging
 import re
@@ -17,13 +12,17 @@ from aiogram.utils.deep_linking import create_start_link
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.utils.markdown import hbold, hpre
 from openai import BadRequestError, AsyncOpenAI
+from tortoise.expressions import Q
 from tortoise.functions import Max
 
 from src import db, card_gen
+from src.card_actions import Action, CardActionCallback
 from src.commands import card_command
 from src.db import user_from_message, TelebotUsers, CardRequests, CardRequestQuestions, CardRequestsAnswers, CardResult
 from src.fsm.card import CardForm
 from src.image_generator import ImageGenerator
+from src.img import Proxy
+from src.prompt_generator import get_depiction_ideas
 from src.s3 import S3Uploader
 from src.settings import Settings
 
@@ -233,8 +232,8 @@ async def regenerate(query: CallbackQuery, callback_data: CardActionCallback, bo
         await card_gen.render_card(request_id=callback_data.request_id, user=user, locale=locale, image_generator=image_generator,
                                    s3_uploader=s3_uploader, async_openai_client=async_openai_client)
         await deliver_generated_samples_to_user(request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                                                image_generator=image_generator, debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
-                                                image_proxy=image_proxy, async_openai_client=async_openai_client)
+                                                debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
+                                                image_proxy=image_proxy)
 
 
 def escape_markdown(text: str) -> str:

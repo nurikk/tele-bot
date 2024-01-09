@@ -8,7 +8,6 @@ from tortoise.expressions import F
 from src import db
 from src.image_generator import ImageGenerator
 from src.img import Proxy
-
 from src.prompt_generator import generate_prompt, get_depiction_ideas, get_greeting_text
 from src.s3 import S3Uploader
 

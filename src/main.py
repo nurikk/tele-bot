@@ -11,14 +11,14 @@ from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src import db
-from src.commands import card_command, card_bot_command, stop_bot_command
+from src.commands import card_bot_command, stop_bot_command
 from src.image_generator import ReplicateGenerator
 from src.img import ImageOptim
+from src.message_handlers.broadcaster import register as register_broadcast_handler
 from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
 from src.message_handlers.start import register as register_start_handler
 from src.message_handlers.stop import register as register_stop_handler
-from src.message_handlers.broadcaster import register as register_broadcast_handler
 from src.s3 import S3Uploader
 from src.settings import Settings
 

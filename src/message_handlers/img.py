@@ -21,7 +21,8 @@ def register(dp: Dispatcher):
         await state.clear()
         prompt = message.text
         resp = await image_generator.generate(prompt=prompt)
-        image = URLInputFile(resp, filename="img.png")
-        await bot.send_photo(chat_id=message.chat.id, photo=image)
+        for img in resp:
+            image = URLInputFile(img, filename="img.png")
+            await bot.send_photo(chat_id=message.chat.id, photo=image)
 
     dp.include_router(form_router)

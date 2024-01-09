@@ -1,12 +1,10 @@
 import i18n
-from aiogram import Dispatcher, types, Bot
-from aiogram.filters import CommandObject
+from aiogram import Dispatcher
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
-from src.commands import start_command, start_referral_command, stop_command
-from src.db import user_from_message, TelebotUsers
-from src.settings import Settings
+from src.commands import stop_command
+from src.db import TelebotUsers
 
 
 def register(dp: Dispatcher):
