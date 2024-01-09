@@ -6,7 +6,7 @@ from enum import Enum
 
 import i18n
 from aiogram import types, Bot
-from tortoise import fields, Tortoise
+from tortoise import fields, Tortoise, connections
 from tortoise.expressions import F as F_SQL
 from tortoise.models import Model
 
@@ -44,7 +44,6 @@ class TelebotUsers(Model):
     username: str = fields.TextField(null=True)
     remaining_cards: int = fields.IntField(default=5)
     is_stopped: bool = fields.BooleanField(default=False)
-    
     is_admin: bool = fields.BooleanField(default=False)
 
 
@@ -128,6 +127,31 @@ async def start(db_url: str):
 def normalise_month_name(month_name: str) -> int:
     russian_months = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"]
     return russian_months.index(month_name) + 1
+
+
+async def get_user_ids_for_locale(locale: str) -> list[int]:
+    conn = connections.get("default")
+    SQL = """
+    with _data as (
+        select
+        u.id,
+        case
+            WHEN a.language_code != 'ru' then 'en'
+            else a.language_code
+        end as language_code
+        from
+            telebotusers u
+            left join cardrequests r on u.id = r.user_id
+            left join cardrequestsanswers a on r.id = a.request_id
+            where u.telegram_id != 0
+        group by
+            1,
+            2
+        )
+    select id from _data where language_code = $1
+    """
+    val = await conn.execute_query_dict(SQL, [locale])
+    return [v['id'] for v in val]
 
 
 async def load_holidays():

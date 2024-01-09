@@ -13,4 +13,3 @@ img_command = Command(BotCommand(command="img", description="Generate a imagee")
 
 
 generate_broadcast = Command(BotCommand(command="generate_broadcast", description="Generate broadcast cards"))
-broadcast = Command(BotCommand(command="broadcast", description="Broadcast card"))
