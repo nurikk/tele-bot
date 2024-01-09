@@ -34,12 +34,6 @@ async def user_from_message(telegram_user: types.User, referred_by: int = None, 
     return user
 
 
-class UserType(str, Enum):
-    User = "User"
-    System = "System"
-    Admin = "Admin"
-
-
 class TelebotUsers(Model):
     id: int = fields.IntField(pk=True)
     referred_by = fields.ForeignKeyField("models.TelebotUsers", related_name="referrals", null=True, index=True)
@@ -49,8 +43,9 @@ class TelebotUsers(Model):
     full_name: str = fields.TextField(null=True)
     username: str = fields.TextField(null=True)
     remaining_cards: int = fields.IntField(default=5)
-    user_type: UserType = fields.CharEnumField(UserType, default=UserType.User)
     is_stopped: bool = fields.BooleanField(default=False)
+    
+    is_admin: bool = fields.BooleanField(default=False)
 
 
 class CardRequestQuestions(str, Enum):
@@ -69,6 +64,7 @@ class CardRequests(Model):
     revised_prompt: str = fields.TextField(null=True)
     greeting_text: str = fields.TextField(null=True)
     shares_count: int = fields.IntField(default=0)
+    is_public: bool = fields.BooleanField(default=False)
 
 
 class CardResult(Model):

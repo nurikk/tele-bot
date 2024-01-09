@@ -30,7 +30,7 @@ from src.settings import Settings
 
 
 async def debug_log(request_id: int, bot: Bot,
-                    user: TelebotUsers, debug_chat_id: int, s3_uploader: S3Uploader, image_proxy: Proxy):
+                    user: TelebotUsers, debug_chat_id: int, s3_uploader: S3Uploader, image_proxy: Proxy, add_broadcast: bool = False) -> None:
     card_request = await CardRequests.get(id=request_id)
     answers = await db.CardRequestsAnswers.filter(request_id=request_id).all()
     prompt_data = ''
@@ -39,7 +39,8 @@ async def debug_log(request_id: int, bot: Bot,
     messages = [
         f"New card for {hbold(user.full_name)} @{user.username}!",
         f"User response: \n {hpre(prompt_data)}",
-        f"Generated prompt:\n {hpre(card_request.generated_prompt)}"
+        f"Generated prompt:\n {hpre(card_request.generated_prompt)}",
+        f"Greeting:\n {hpre(card_request.greeting_text)}",
     ]
     await bot.send_message(chat_id=debug_chat_id, text="\n".join(messages))
 
@@ -260,7 +261,7 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     request_id = query.query
     results = []
     if request_id:
-        request_qs = CardRequests.filter(id=request_id).filter((Q(user=user) | Q(user__user_type=db.UserType.System)))
+        request_qs = CardRequests.filter(id=request_id).filter((Q(user=user) | Q(is_public=True)))
     else:
         request_qs = CardRequests.filter(user=user)
 

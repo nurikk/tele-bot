@@ -10,3 +10,7 @@ stop_bot_command = BotCommand(command="stop", description="Stop the bot")
 stop_command = Command(stop_bot_command)
 
 img_command = Command(BotCommand(command="img", description="Generate a imagee"))
+
+
+generate_broadcast = Command(BotCommand(command="generate_broadcast", description="Generate broadcast cards"))
+broadcast = Command(BotCommand(command="broadcast", description="Broadcast card"))
