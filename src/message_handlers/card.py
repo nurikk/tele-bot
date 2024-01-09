@@ -1,3 +1,5 @@
+from tortoise.expressions import Q
+
 from src.prompt_generator import get_depiction_ideas
 from src.img import Proxy
 import datetime
@@ -257,10 +259,12 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     link = await create_start_link(bot, str(user.id))
     request_id = query.query
     results = []
-    request_qs = CardRequests.filter(user=user).prefetch_related('results').order_by("-created_at")
     if request_id:
-        request_qs = request_qs.filter(id=request_id)
-    requests = await request_qs.limit(10)
+        request_qs = CardRequests.filter(id=request_id).filter((Q(user=user) | Q(user__user_type=db.UserType.System)))
+    else:
+        request_qs = CardRequests.filter(user=user)
+
+    requests = await request_qs.prefetch_related('results').order_by("-created_at").limit(10)
     reply_markup = InlineKeyboardMarkup(
         inline_keyboard=[[
             InlineKeyboardButton(text=i18n.t("generate_your_own", locale=query.from_user.language_code), url=link)
