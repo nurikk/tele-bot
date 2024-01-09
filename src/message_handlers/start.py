@@ -5,13 +5,13 @@ from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 
 from src.commands import start_command, start_referral_command
-from src.db import user_from_message
+from src.db import user_from_message, TelebotUsers
 from src.settings import Settings
 
 
 async def handle_new_user(message: types.Message, bot: Bot, cards_per_user: int = 5, referred_by: int = None):
     await user_from_message(telegram_user=message.from_user, referred_by=referred_by, bot=bot, cards_per_user=cards_per_user)
-
+    await TelebotUsers.filter(telegram_id=message.from_user.id).update(is_stopped=False)
     welcome_messages = [
         i18n.t('first_message', name=hbold(message.from_user.full_name), locale=message.from_user.language_code),
         i18n.t('commands.card', locale=message.from_user.language_code)

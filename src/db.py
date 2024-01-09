@@ -50,6 +50,7 @@ class TelebotUsers(Model):
     username: str = fields.TextField(null=True)
     remaining_cards: int = fields.IntField(default=5)
     user_type: UserType = fields.CharEnumField(UserType, default=UserType.User)
+    is_stopped: bool = fields.BooleanField(default=False)
 
 
 class CardRequestQuestions(str, Enum):

@@ -1,4 +1,6 @@
 first_message: 'Hello %{name}!'
+stop_message: 'Bye %{name}!'
+
 regenerate: 'Redraw'
 invite_friend: 'Invite a friend'
 no_cards_left: "Not enough power ⚡️ to create a picture. Invite 1 friend and get 5 new cards"
