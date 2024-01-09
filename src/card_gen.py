@@ -59,7 +59,7 @@ async def generate_cards(image_generator: ImageGenerator, s3_uploader: S3Uploade
                                                                  "username": "__system__bot__"}))[0]
 
     for locale in ["ru", "en"]:
-        holidays = await db.get_near_holidays(locale, days=1)
+        holidays = await db.get_near_holidays(locale, days=2)
         for holiday in holidays:
             card_request = await db.CardRequests.create(user=system_user, is_public=True)
 
