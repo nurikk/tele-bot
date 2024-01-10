@@ -271,6 +271,9 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     thumbnail_height = 256
     for request in requests:
         reason = await CardRequestsAnswers.filter(request_id=request.id, question=CardRequestQuestions.REASON).first()
+        reason_text = ''
+        if reason:
+            reason_text = reason.answer
 
         for result in request.results:
             photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
@@ -281,7 +284,8 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
             results.append(types.InlineQueryResultArticle(
                 id=str(datetime.datetime.now()),
                 title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
-                description=i18n.t('shared_description', locale=query.from_user.language_code, name=query.from_user.full_name, reason=reason.answer),
+                description=i18n.t('shared_description', locale=query.from_user.language_code,
+                                   name=query.from_user.full_name, reason=reason_text),
                 thumbnail_width=thumbnail_width,
                 thumbnail_height=thumbnail_height,
                 thumbnail_url=thumbnail_url,
