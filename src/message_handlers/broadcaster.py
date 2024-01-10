@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 
 from aiogram import Dispatcher, Bot, Router, F
 from aiogram.exceptions import TelegramForbiddenError
@@ -55,7 +56,7 @@ async def broadcast_handler(message: CallbackQuery,
         user_ids = await db.get_user_ids_for_locale(locale=locale)
         recipients = await db.TelebotUsers.filter(id__in=user_ids).all()
         total = len(recipients)
-        exceptions = 0
+        exceptions = defaultdict(int)
         for idx, recipient in enumerate(recipients):
             logging.info(f'Sending card to {recipient.full_name} {recipient.id} {recipient.telegram_id}')
             try:
@@ -71,9 +72,11 @@ async def broadcast_handler(message: CallbackQuery,
             except TelegramForbiddenError as ex:
                 logging.error(str(ex))
                 await db.TelebotUsers.filter(id=recipient.id).update(is_stopped=True)
-                exceptions += 1
-
-            await sent_message.edit_text(f"Broadcasting cards...{idx+1}/{total} ({exceptions=})")
+                exceptions[str(ex)] += 1
+            excs = ''
+            for k, v in exceptions.items():
+                excs += f'{k}: {v}\n'
+            await sent_message.edit_text(f"Broadcasting cards...{idx+1}/{total}\n{excs}")
 
 
 def register(dp: Dispatcher):
