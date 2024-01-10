@@ -271,34 +271,31 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
     thumbnail_height = 256
     for request in requests:
         reason = await CardRequestsAnswers.filter(request_id=request.id, question=CardRequestQuestions.REASON).first()
-        reason_text = ''
         if reason:
-            reason_text = reason.answer
+            for result in request.results:
+                photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
+                thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(result.result_image), width=thumbnail_width,
+                                                          height=thumbnail_height)
 
-        for result in request.results:
-            photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
-            thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(result.result_image), width=thumbnail_width,
-                                                      height=thumbnail_height)
-
-            logging.info(f"{photo_url=} {thumbnail_url=}")
-            results.append(types.InlineQueryResultArticle(
-                id=str(datetime.datetime.now()),
-                title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
-                description=i18n.t('shared_description', locale=query.from_user.language_code,
-                                   name=query.from_user.full_name, reason=reason_text),
-                thumbnail_width=thumbnail_width,
-                thumbnail_height=thumbnail_height,
-                thumbnail_url=thumbnail_url,
-                input_message_content=types.InputTextMessageContent(
-                    message_text=get_message_content(locale=query.from_user.language_code, reason=reason,
-                                                     full_name=query.from_user.full_name,
-                                                     photo_url=photo_url,
-                                                     greeting_text=request.greeting_text),
-                    parse_mode="MarkdownV2",
-                ),
-                caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
-                reply_markup=reply_markup,
-            ))
+                logging.info(f"{photo_url=} {thumbnail_url=}")
+                results.append(types.InlineQueryResultArticle(
+                    id=str(datetime.datetime.now()),
+                    title=i18n.t('shared_title', locale=query.from_user.language_code, name=query.from_user.full_name),
+                    description=i18n.t('shared_description', locale=query.from_user.language_code,
+                                       name=query.from_user.full_name, reason=reason.answer),
+                    thumbnail_width=thumbnail_width,
+                    thumbnail_height=thumbnail_height,
+                    thumbnail_url=thumbnail_url,
+                    input_message_content=types.InputTextMessageContent(
+                        message_text=get_message_content(locale=query.from_user.language_code, reason=reason,
+                                                         full_name=query.from_user.full_name,
+                                                         photo_url=photo_url,
+                                                         greeting_text=request.greeting_text),
+                        parse_mode="MarkdownV2",
+                    ),
+                    caption=i18n.t('shared_from', locale=query.from_user.language_code, name=query.from_user.full_name),
+                    reply_markup=reply_markup,
+                ))
 
     await query.answer(results=results, cache_time=0)
 
