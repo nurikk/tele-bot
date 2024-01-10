@@ -3,9 +3,10 @@ import logging
 from collections import defaultdict
 
 from aiogram import Dispatcher, Bot, Router, F
-from aiogram.exceptions import TelegramForbiddenError, TelegramNotFound
+from aiogram.exceptions import TelegramForbiddenError, TelegramNotFound, AiogramError
 from aiogram.types import Message, CallbackQuery
 from openai import AsyncOpenAI
+from tqdm import tqdm
 
 from src import db
 from src.card_actions import CardActionCallback, Action
@@ -58,7 +59,7 @@ async def broadcast_handler(message: CallbackQuery,
         recipients = await db.TelebotUsers.filter(id__in=user_ids).all()
         total = len(recipients)
         exceptions = defaultdict(int)
-        for idx, recipient in enumerate(recipients):
+        for idx, recipient in enumerate(tqdm(recipients)):
             logging.info(f'Sending card to {recipient.full_name} {recipient.id} {recipient.telegram_id}')
             try:
                 await deliver_generated_samples_to_user(
@@ -78,10 +79,13 @@ async def broadcast_handler(message: CallbackQuery,
             excs = ''
             for k, v in exceptions.items():
                 excs += f'{k}: {v}\n'
-            await sent_message.edit_text(f"Broadcasting cards...{idx+1}/{total}\n{excs}")
+            try:
+                if idx % 10 == 0:
+                    await sent_message.edit_text(f"Broadcasting cards...{idx + 1}/{total}\n{excs}")
+            except AiogramError as ex:
+                logging.error(str(ex))
             # 20 messages per second (Limit: 30 messages per second)
-            await asyncio.sleep(1/20)
-
+            await asyncio.sleep(1 / 20)
 
 
 def register(dp: Dispatcher):
