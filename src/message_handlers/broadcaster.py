@@ -70,8 +70,9 @@ async def broadcast_handler(message: CallbackQuery,
                     bot=bot
                 )
             except TelegramForbiddenError as ex:
-                logging.error(str(ex))
                 await db.TelebotUsers.filter(id=recipient.id).update(is_stopped=True)
+                exceptions[str(ex)] += 1
+            except Exception as ex:
                 exceptions[str(ex)] += 1
             excs = ''
             for k, v in exceptions.items():
