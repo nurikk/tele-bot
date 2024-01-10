@@ -1,8 +1,9 @@
+import asyncio
 import logging
 from collections import defaultdict
 
 from aiogram import Dispatcher, Bot, Router, F
-from aiogram.exceptions import TelegramForbiddenError
+from aiogram.exceptions import TelegramForbiddenError, TelegramNotFound
 from aiogram.types import Message, CallbackQuery
 from openai import AsyncOpenAI
 
@@ -69,7 +70,7 @@ async def broadcast_handler(message: CallbackQuery,
                     image_proxy=image_proxy,
                     bot=bot
                 )
-            except TelegramForbiddenError as ex:
+            except (TelegramForbiddenError, TelegramNotFound) as ex:
                 await db.TelebotUsers.filter(id=recipient.id).update(is_stopped=True)
                 exceptions[str(ex)] += 1
             except Exception as ex:
@@ -78,6 +79,9 @@ async def broadcast_handler(message: CallbackQuery,
             for k, v in exceptions.items():
                 excs += f'{k}: {v}\n'
             await sent_message.edit_text(f"Broadcasting cards...{idx+1}/{total}\n{excs}")
+            # 20 messages per second (Limit: 30 messages per second)
+            await asyncio.sleep(1/20)
+
 
 
 def register(dp: Dispatcher):
