@@ -9,13 +9,13 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory = 512
+  task_memory = 1024
   task_cpu    = 256
 }
 
 resource "aws_ecs_task_definition" "task" {
   family                = "tele-bot-task"
-  container_definitions = jsonencode([
+  container_definitions = jsonencode(concat([
     {
       name : "telebot",
       image : aws_ecr_repository.app_ecr_repo.repository_url,
@@ -113,7 +113,10 @@ resource "aws_ecs_task_definition" "task" {
         }
       ]
     },
-  ])
+  ],
+#    local.redash_container_definitions,
+    local.metabase_container_definitions
+  ))
 
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"

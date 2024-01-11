@@ -33,7 +33,14 @@ variable "LETSENCRYPT_EMAIL" {
   type = string
 }
 
-
 variable "IMAGEOPTIM_ACCOUNT_ID" {
+  type = string
+}
+
+variable "REDASH_GOOGLE_CLIENT_ID" {
+  type = string
+}
+
+variable "REDASH_GOOGLE_CLIENT_SECRET" {
   type = string
 }
