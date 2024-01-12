@@ -38,9 +38,9 @@ card_form:
     response: "Drawing! Please wait a little"
 
 prompt: "A %{reason} greeting picture.
- This person looks like %{description}. 
- Depict %{depiction}. 
- Add fireworks"
+ This object or animal looks like %{description}. 
+ Depict %{depiction} in cartoon style. 
+ Funny and fun picture. Add fireworks and balloons."
 
 month_names:
   month_1: January
