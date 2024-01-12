@@ -70,7 +70,7 @@ variable "GITHUB_BRANCH" {
 
 variable "vpc_cidr_block" {
   description = "CIDR block for the VPC network"
-  default     = "10.1.0.0/16"
+  default     = "10.32.0.0/16"
   type        = string
 }
 

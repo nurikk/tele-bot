@@ -24,7 +24,7 @@ data "aws_iam_policy_document" "ec2_instance_role_policy" {
     effect  = "Allow"
 
     principals {
-      type        = "Service"
+      type = "Service"
       identifiers = [
         "ec2.amazonaws.com",
         "ecs.amazonaws.com"
@@ -73,7 +73,7 @@ resource "aws_launch_template" "ecs_lt" {
   image_id      = data.aws_ami.amazon_linux_2.id
   instance_type = "t3.micro"
 
-  vpc_security_group_ids = [data.aws_security_group.default.id]
+  vpc_security_group_ids = [aws_security_group.security_group.id]
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
@@ -91,23 +91,14 @@ resource "aws_launch_template" "ecs_lt" {
 
 resource "aws_autoscaling_group" "ecs_asg" {
   name                = "telebot-ecs-asg"
-  vpc_zone_identifier = [
-    aws_default_subnet.default_subnet_a.id,
-    aws_default_subnet.default_subnet_b.id
-  ]
-  desired_capacity = 1
-  max_size         = 1
-  min_size         = 1
+  vpc_zone_identifier = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
+  desired_capacity    = 1
+  max_size            = 1
+  min_size            = 1
 
   launch_template {
     id      = aws_launch_template.ecs_lt.id
     version = "$Latest"
-  }
-
-  tag {
-    key                 = "AmazonECSManaged"
-    value               = true
-    propagate_at_launch = true
   }
 }
 

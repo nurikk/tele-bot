@@ -1,5 +1,5 @@
 #resource "aws_security_group" "image_proxy_sg" {
-#  vpc_id = aws_default_vpc.default.id
+#  vpc_id = aws_vpc.default.id
 #
 #  ingress {
 #    from_port   = 8080
@@ -24,8 +24,8 @@
 #    aws_security_group.image_proxy_sg.id
 #  ]
 #  subnets = [
-#    aws_default_subnet.default_subnet_a.id,
-#    aws_default_subnet.default_subnet_b.id
+#    aws_subnet.default_subnet_a.id,
+#    aws_subnet.default_subnet_b.id
 #  ]
 #}
 
@@ -45,7 +45,7 @@
 #  port        = 8080
 #  protocol    = "HTTP"
 #  target_type = "ip"
-#  vpc_id      = aws_default_vpc.default.id
+#  vpc_id      = aws_vpc.default.id
 #
 #  health_check {
 #    path = "/health"
