@@ -56,9 +56,9 @@ resource "aws_codepipeline" "codepipeline" {
       version         = "1"
 
       configuration = {
-        ClusterName  = aws_ecs_cluster.cluster.name
-        FileName     = "imagedefinitions.json"
-        ServiceName  = aws_ecs_service.app_service.name
+        ClusterName = aws_ecs_cluster.cluster.name
+        FileName    = "imagedefinitions.json"
+        ServiceName = aws_ecs_service.app_service.name
       }
     }
   }
@@ -134,10 +134,24 @@ data "aws_iam_policy_document" "codepipeline_policy" {
 
     resources = ["*"]
   }
+
+  statement {
+    effect  = "Allow"
+    actions = [
+      "codedeploy:CreateDeployment",
+      "codedeploy:GetApplicationRevision",
+      "codedeploy:GetApplication",
+      "codedeploy:GetDeployment",
+      "codedeploy:GetDeploymentConfig",
+      "codedeploy:RegisterApplicationRevision",
+      "ecs:RegisterTaskDefinition"
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "codepipeline_policy" {
-  name   = "codepipeline_policy"
-  role   = aws_iam_role.codepipeline_role.id
-  policy = data.aws_iam_policy_document.codepipeline_policy.json
+name = "codepipeline_policy"
+role = aws_iam_role.codepipeline_role.id
+policy = data.aws_iam_policy_document.codepipeline_policy.json
 }
