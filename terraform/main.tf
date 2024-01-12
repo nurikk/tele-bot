@@ -9,8 +9,8 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory = 1024
-  task_cpu    = 256
+  task_memory            = 1024
+  task_cpu               = 256
   telebot_container_name = "telebot"
 }
 
@@ -103,7 +103,7 @@ resource "aws_ecs_task_definition" "task" {
       ]
     },
   ],
-#    local.redash_container_definitions,
+    #    local.redash_container_definitions,
     local.metabase_container_definitions
   ))
 
@@ -150,6 +150,9 @@ resource "aws_ecs_service" "app_service" {
   task_definition = aws_ecs_task_definition.task.arn
   launch_type     = "FARGATE"
   desired_count   = 1
+#  deployment_controller {
+#    type = "CODE_DEPLOY"
+#  }
   network_configuration {
     subnets = [
       aws_default_subnet.default_subnet_a.id,
