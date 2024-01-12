@@ -10,9 +10,6 @@ variable "TELEGRAM_BOT_TOKEN" {
   type = string
 }
 
-variable "NEW_RELIC_API_KEY" {
-  type = string
-}
 variable "IMGPROXY_KEY" {
   type = string
 }
@@ -43,4 +40,9 @@ variable "REDASH_GOOGLE_CLIENT_ID" {
 
 variable "REDASH_GOOGLE_CLIENT_SECRET" {
   type = string
+}
+
+variable "GITHUB_REPO" {
+  type = string
+  default = "https://github.com/nurikk/tele-bot.git"
 }

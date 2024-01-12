@@ -73,18 +73,6 @@ resource "aws_ecs_task_definition" "task" {
           "value" : var.IMAGEOPTIM_ACCOUNT_ID
         },
         {
-          "name" : "NEW_RELIC_API_KEY",
-          "value" : var.NEW_RELIC_API_KEY
-        },
-        {
-          "name" : "NEW_RELIC_ACCOUNT_ID",
-          "value" : "4301128",
-        },
-        {
-          "name" : "NEW_RELIC_REGION",
-          "value" : "EU"
-        },
-        {
           "name" : "IMGPROXY_HOSTNAME",
           "value" : "${var.DUCK_DNS_DOMAIN}.duckdns.org"
         }
