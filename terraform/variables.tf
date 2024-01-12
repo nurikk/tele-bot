@@ -1,3 +1,13 @@
+variable "namespace" {
+  default = "telebot"
+  type    = string
+}
+
+variable "environment" {
+  default = "production"
+  type    = string
+}
+
 variable "OPENAI_API_KEY" {
   type = string
 }
@@ -43,16 +53,29 @@ variable "REDASH_GOOGLE_CLIENT_SECRET" {
 }
 
 variable "GITHUB_REPO" {
-  type = string
+  type    = string
   default = "https://github.com/nurikk/tele-bot.git"
 }
 
 variable "CODEPIPELINE_GITHUB_REPO" {
-  type = string
+  type    = string
   default = "nurikk/tele-bot"
 }
 
 variable "GITHUB_BRANCH" {
-  type = string
+  type    = string
   default = "master"
+}
+
+
+variable "vpc_cidr_block" {
+  description = "CIDR block for the VPC network"
+  default     = "10.1.0.0/16"
+  type        = string
+}
+
+variable "az_count" {
+  description = "Describes how many availability zones are used"
+  default     = 2
+  type        = number
 }

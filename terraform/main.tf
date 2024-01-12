@@ -9,13 +9,35 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory            = 1024
+  task_memory            = 512
   task_cpu               = 256
   telebot_container_name = "telebot"
 }
 
+
+data "aws_iam_policy_document" "task_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+
+resource "aws_iam_role" "ecs_task_iam_role" {
+  name               = "ECS_TaskIAMRole"
+  assume_role_policy = data.aws_iam_policy_document.task_assume_role_policy.json
+}
+
 resource "aws_ecs_task_definition" "task" {
-  family                = "tele-bot-task"
+  family = "tele-bot-task"
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "X86_64"
+  }
   container_definitions = jsonencode(concat([
     {
       name : local.telebot_container_name,
@@ -104,14 +126,15 @@ resource "aws_ecs_task_definition" "task" {
     },
   ],
     #    local.redash_container_definitions,
-    local.metabase_container_definitions
+    #    local.metabase_container_definitions
   ))
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   memory                   = local.task_memory
-  cpu                      = local.task_cpu
+  #  cpu                      = local.task_cpu
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
+  task_role_arn            = aws_iam_role.ecs_task_iam_role.arn
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
@@ -148,17 +171,14 @@ resource "aws_ecs_service" "app_service" {
   name            = "tele-bot-service"
   cluster         = aws_ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.task.arn
-  launch_type     = "FARGATE"
+  launch_type     = "EC2"
   desired_count   = 1
-#  deployment_controller {
-#    type = "CODE_DEPLOY"
-#  }
   network_configuration {
     subnets = [
       aws_default_subnet.default_subnet_a.id,
       aws_default_subnet.default_subnet_b.id
     ]
-    assign_public_ip = true
+#    assign_public_ip = true
     security_groups  = [
       data.aws_security_group.default.id,
 #      aws_security_group.image_proxy_sg.id
