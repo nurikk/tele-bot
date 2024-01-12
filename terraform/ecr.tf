@@ -13,7 +13,7 @@ resource "aws_ecr_lifecycle_policy" "cleanup_policy" {
           "selection" : {
             "tagStatus" : "any",
             "countType" : "imageCountMoreThan",
-            "countNumber" : 5
+            "countNumber" : 2
           },
           "action" : {
             "type" : "expire"
