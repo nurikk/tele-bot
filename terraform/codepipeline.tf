@@ -44,26 +44,24 @@ resource "aws_codepipeline" "codepipeline" {
     }
   }
 
-#  stage {
-#    name = "Deploy"
-#
-#    action {
-#      name            = "Deploy"
-#      category        = "Deploy"
-#      owner           = "AWS"
-#      provider        = "CloudFormation"
-#      input_artifacts = ["build_output"]
-#      version         = "1"
-#
-#      configuration = {
-#        ActionMode     = "REPLACE_ON_FAILURE"
-#        Capabilities   = "CAPABILITY_AUTO_EXPAND,CAPABILITY_IAM"
-#        OutputFileName = "CreateStackOutput.json"
-#        StackName      = "MyStack"
-#        TemplatePath   = "build_output::sam-templated.yaml"
-#      }
-#    }
-#  }
+  stage {
+    name = "Deploy"
+
+    action {
+      name            = "Deploy"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "ECS"
+      input_artifacts = ["build_output"]
+      version         = "1"
+
+      configuration = {
+        ClusterName  = aws_ecs_cluster.cluster.name
+        FileName     = "imagedefinitions.json"
+        ServiceName  = aws_ecs_service.app_service.name
+      }
+    }
+  }
 }
 
 resource "aws_codestarconnections_connection" "example" {
