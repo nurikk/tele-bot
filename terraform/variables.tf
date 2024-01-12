@@ -46,3 +46,13 @@ variable "GITHUB_REPO" {
   type = string
   default = "https://github.com/nurikk/tele-bot.git"
 }
+
+variable "CODEPIPELINE_GITHUB_REPO" {
+  type = string
+  default = "nurikk/tele-bot"
+}
+
+variable "GITHUB_BRANCH" {
+  type = string
+  default = "master"
+}
