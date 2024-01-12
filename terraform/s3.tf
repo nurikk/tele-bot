@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "telebot_bucket" {
-  bucket = "telebot-images"
+  bucket = "telebot-images-2"
 }
 
 
