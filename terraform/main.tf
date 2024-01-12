@@ -9,8 +9,7 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory = 512
-  task_cpu    = 256
+  task_memory = 944
 }
 
 
@@ -32,7 +31,7 @@ resource "aws_iam_role" "ecs_task_iam_role" {
 }
 
 resource "aws_ecs_task_definition" "task" {
-  family = "tele-bot-task"
+  family                = "tele-bot-task"
   container_definitions = jsonencode(concat(
     local.telebot_container_definitions,
     local.duckdns_container_definitions
@@ -43,9 +42,8 @@ resource "aws_ecs_task_definition" "task" {
   requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   memory                   = local.task_memory
-  #  cpu                      = local.task_cpu
-  execution_role_arn = aws_iam_role.ecsTaskExecutionRole.arn
-  task_role_arn      = aws_iam_role.ecs_task_iam_role.arn
+  execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
+  task_role_arn            = aws_iam_role.ecs_task_iam_role.arn
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
@@ -77,7 +75,7 @@ resource "aws_ecs_service" "app_service" {
   launch_type     = "EC2"
   desired_count   = 1
   network_configuration {
-    subnets         = aws_subnet.private.*.id
+    subnets = aws_subnet.private.*.id
 
     #    assign_public_ip = true
     security_groups = [
