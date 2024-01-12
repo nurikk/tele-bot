@@ -161,7 +161,7 @@ resource "aws_ecs_service" "app_service" {
     assign_public_ip = true
     security_groups  = [
       data.aws_security_group.default.id,
-      aws_security_group.image_proxy_sg.id
+#      aws_security_group.image_proxy_sg.id
     ]
   }
 }
