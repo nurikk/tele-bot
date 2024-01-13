@@ -71,7 +71,7 @@ data "aws_ami" "amazon_linux_2" {
 resource "aws_launch_template" "ecs_lt" {
   name_prefix   = "telebot-ec2-free-tier"
   image_id      = data.aws_ami.amazon_linux_2.id
-  instance_type = "t3.micro"
+  instance_type = "t2.micro"
 
   vpc_security_group_ids = [aws_security_group.security_group.id]
   block_device_mappings {
