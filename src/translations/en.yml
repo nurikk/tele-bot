@@ -39,8 +39,8 @@ card_form:
 
 prompt: "A %{reason} greeting picture.
  This object or animal looks like %{description}. 
- Depict %{depiction} in cartoon style. 
- Funny and fun picture. Add confetti and balloons."
+ Depict %{depiction}. 
+ Funny and fun picture. Add confetti"
 
 month_names:
   month_1: January
