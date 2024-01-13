@@ -11,7 +11,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from openai import AsyncOpenAI
 
 from src import db
-from src.commands import card_bot_command, stop_bot_command
+from src.commands import card_bot_command, stop_bot_command, calendar_bot_command
 from src.image_generator import ReplicateGenerator
 from src.img import ImageOptim
 from src.message_handlers.broadcaster import register as register_broadcast_handler
@@ -19,6 +19,7 @@ from src.message_handlers.card import register as register_card_handler
 from src.message_handlers.img import register as register_img_handler
 from src.message_handlers.start import register as register_start_handler
 from src.message_handlers.stop import register as register_stop_handler
+from src.message_handlers.calendar import register as register_calendar_handler
 from src.s3 import S3Uploader
 from src.settings import Settings
 
@@ -32,7 +33,8 @@ async def set_default_commands(bot: Bot) -> None:
     await bot.set_my_commands(
         [
             card_bot_command,
-            stop_bot_command
+            stop_bot_command,
+            calendar_bot_command
         ]
     )
 
@@ -46,6 +48,7 @@ async def main(dispatcher: Dispatcher, telegram_bot_token: str, db_url: str) -> 
     register_img_handler(dispatcher)
     register_card_handler(dispatcher)
     register_broadcast_handler(dispatcher)
+    register_calendar_handler(dispatcher)
 
     bot = Bot(token=telegram_bot_token, parse_mode=ParseMode.HTML)
 

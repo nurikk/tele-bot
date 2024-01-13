@@ -1,4 +1,5 @@
 import json
+import random
 
 import i18n
 from openai import AsyncOpenAI
@@ -7,7 +8,9 @@ from src import db
 
 
 def generate_prompt(data: dict[str, str], locale: str) -> str:
-    return i18n.t("prompt", locale=locale, **data)
+    style_samples = i18n.t("style_samples", locale=locale).split(",")
+    style = random.choice(style_samples)
+    return i18n.t("prompt", locale=locale, style=style, **data)
 
 
 async def get_depiction_ideas(request_id: int, locale: str, client: AsyncOpenAI) -> list[str]:
@@ -19,6 +22,7 @@ async def get_depiction_ideas(request_id: int, locale: str, client: AsyncOpenAI)
                                            ).values('answers__question', 'answers__answer')
 
     answers_dict = {item['answers__question']: item['answers__answer'] for item in answers}
+
 
     prompt = i18n.t("card_form.depiction.depiction_prompt", locale=locale,
                     reason=answers_dict.get(db.CardRequestQuestions.REASON, ""),

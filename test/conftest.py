@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -26,6 +27,9 @@ def in_memory_db(request, event_loop):
     request.addfinalizer(lambda: event_loop.run_until_complete(Tortoise._drop_databases()))
 
 
+current_date = datetime(2021, 1, 1)
+
+
 @pytest.fixture
 def db_mock(in_memory_db, event_loop):
     async def code():
@@ -38,7 +42,9 @@ def db_mock(in_memory_db, event_loop):
             for x in range(1, 10):
                 request = await CardRequests.create(user=user)
                 for language_code in ['en', 'ru']:
-                    await Holidays.create(country_code=language_code, day=x, month=i, title=f'holiday {i} {x} {language_code}')
+                    await Holidays.create(country_code=language_code, date=current_date + timedelta(days=x), title=f'holiday {i} {x} {language_code}',
+                                          description=f'description {i} {x} {language_code}',
+                                          url=f'url {i} {x} {language_code}')
                     for question in all_questions:
                         await CardRequestsAnswers.create(request=request,
                                                          question=question,

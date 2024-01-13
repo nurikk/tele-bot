@@ -14,3 +14,6 @@ stop_command = Command(stop_bot_command)
 img_command = Command(BotCommand(command="img", description="Generate a imagee"))
 
 generate_broadcast = Command(re.compile(r"generate_broadcast_(en|ru)"))
+
+calendar_bot_command = BotCommand(command="calendar", description="Events calendar")
+calendar = Command(calendar_bot_command)

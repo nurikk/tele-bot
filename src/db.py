@@ -88,19 +88,25 @@ class Holidays(Model):
     updated_at: datetime.datetime = fields.DatetimeField(auto_now=True)
 
     country_code: str = fields.TextField()
-    day: str = fields.IntField()
-    month: str = fields.IntField()
+    date: datetime.date = fields.DateField()
     title: str = fields.TextField()
+    description: str = fields.TextField()
+    url: str = fields.TextField()
 
     def full_title(self):
-        return f"{self.title} ({self.day} {i18n.t(f'month_names.month_{self.month}', locale=self.country_code)})"
+        return f"{self.title} ({self.date.day} {i18n.t(f'month_names.month_{self.date.month}', locale=self.country_code)})"
+
+
+def get_today():
+    return datetime.datetime.now()
 
 
 async def get_near_holidays(country_code: str, days: int = 7) -> list[Holidays]:
-    current_date = datetime.datetime.now()
+    current_date = get_today()
     holidays = await Holidays.filter(country_code=country_code,
-                                     month=current_date.month,
-                                     day__gte=current_date.day).order_by("day").limit(days).all()
+                                     date__gte=current_date.date(),
+                                     date__lt=current_date.date() + datetime.timedelta(days=days),
+                                     ).order_by("date").all()
     return holidays
 
 
@@ -165,9 +171,10 @@ async def load_holidays():
             file_abs_path = os.path.join(os.path.dirname(__file__), f"holidays/{country}.json")
             with open(file_abs_path) as f:
                 holidays = json.load(f)
-                for holiday in holidays:
-                    for title in holiday['titles']:
+                for day in holidays:
+                    for holiday_description in day['holidays']:
                         await Holidays.create(country_code=country,
-                                              day=int(holiday['date_num']),
-                                              month=normalise_month_name(holiday['date_month']),
-                                              title=title)
+                                              date=datetime.datetime.strptime(day['date'], "%Y-%m-%d").date(),
+                                              title=holiday_description['title'],
+                                              description=holiday_description['description'],
+                                              url=holiday_description['url'])

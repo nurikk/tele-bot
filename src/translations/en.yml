@@ -40,7 +40,11 @@ card_form:
 prompt: "A %{reason} greeting picture.
  This object or animal looks like %{description}. 
  Depict %{depiction}. 
- Funny and fun picture. Add confetti"
+ Funny and fun picture. 
+ Add confetti. 
+ %{style}"
+
+style_samples: "in pinup style,in cartoon style,with magic,in pop-art,in vintage style, in photorealistic style,in collage inspired design"
 
 month_names:
   month_1: January
