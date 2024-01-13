@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "telebot_bucket" {
-  bucket = "telebot-images"
+  bucket = "telebot-images-2"
 }
 
 
@@ -68,7 +68,7 @@ resource "aws_s3_bucket_acl" "site" {
 
 
 resource "aws_iam_policy" "user-policy" {
-  name   = "${aws_iam_user.telebot_s3_uploader.name}-policy"
+  name = "${aws_iam_user.telebot_s3_uploader.name}-policy"
   policy = jsonencode(
     {
       "Version" : "2012-10-17",

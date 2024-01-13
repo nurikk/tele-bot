@@ -9,120 +9,41 @@ resource "aws_cloudwatch_log_group" "logs" {
 }
 
 locals {
-  task_memory = 1024
-  task_cpu    = 256
+  task_memory = 944
+}
+
+
+data "aws_iam_policy_document" "task_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+
+resource "aws_iam_role" "ecs_task_iam_role" {
+  name               = "ECS_TaskIAMRole"
+  assume_role_policy = data.aws_iam_policy_document.task_assume_role_policy.json
 }
 
 resource "aws_ecs_task_definition" "task" {
   family                = "tele-bot-task"
-  container_definitions = jsonencode(concat([
-    {
-      name : "telebot",
-      image : aws_ecr_repository.app_ecr_repo.repository_url,
-      essential : true,
-      logConfiguration : {
-        "logDriver" : "awslogs",
-        "options" : {
-          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
-          "awslogs-region" : data.aws_region.current.name,
-          "awslogs-stream-prefix" : "telebot"
-        }
-      },
-      command : ["./bot.sh"],
-      environment : [
-        {
-          "name" : "OPENAI_API_KEY",
-          "value" : var.OPENAI_API_KEY
-        },
-        {
-          "name" : "REPLICATE_API_TOKEN",
-          "value" : var.REPLICATE_API_TOKEN
-        },
-        {
-          "name" : "TELEGRAM_BOT_TOKEN",
-          "value" : var.TELEGRAM_BOT_TOKEN
-        },
-        {
-          "name" : "DB_URL",
-          "value" : "postgres://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/${aws_db_instance.db.db_name}"
-        },
-        {
-          "name" : "REDIS_URL",
-          "value" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/0"
-        },
-
-        {
-          "name" : "S3_BUCKET_NAME",
-          "value" : aws_s3_bucket.telebot_bucket.id
-        },
-
-        {
-          "name" : "AWS_REGION",
-          "value" : data.aws_region.current.name
-        },
-        {
-          "name" : "AWS_ACCESS_KEY_ID",
-          "value" : aws_iam_access_key.telebot_s3_uploader.id
-        },
-        {
-          "name" : "AWS_SECRET_ACCESS_KEY",
-          "value" : aws_iam_access_key.telebot_s3_uploader.secret
-        },
-        {
-          "name" : "IMAGEOPTIM_ACCOUNT_ID",
-          "value" : var.IMAGEOPTIM_ACCOUNT_ID
-        },
-        {
-          "name" : "NEW_RELIC_API_KEY",
-          "value" : var.NEW_RELIC_API_KEY
-        },
-        {
-          "name" : "NEW_RELIC_ACCOUNT_ID",
-          "value" : "4301128",
-        },
-        {
-          "name" : "NEW_RELIC_REGION",
-          "value" : "EU"
-        },
-        {
-          "name" : "IMGPROXY_HOSTNAME",
-          "value" : "${var.DUCK_DNS_DOMAIN}.duckdns.org"
-        }
-      ]
-    },
-    {
-      name : "duckdns",
-      image : "lscr.io/linuxserver/duckdns:latest",
-      essential : false,
-      logConfiguration : {
-        "logDriver" : "awslogs",
-        "options" : {
-          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
-          "awslogs-region" : data.aws_region.current.name,
-          "awslogs-stream-prefix" : "duckdns"
-        }
-      },
-      environment : [
-        {
-          "name" : "TOKEN",
-          "value" : var.DUCK_DNS_TOKEN
-        },
-        {
-          "name" : "SUBDOMAINS",
-          "value" : var.DUCK_DNS_DOMAIN
-        }
-      ]
-    },
-  ],
-#    local.redash_container_definitions,
-    local.metabase_container_definitions
+  container_definitions = jsonencode(concat(
+    local.telebot_container_definitions,
+    local.duckdns_container_definitions
+    #    local.redash_container_definitions,
+    #    local.metabase_container_definitions
   ))
 
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
   memory                   = local.task_memory
-  cpu                      = local.task_cpu
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
+  task_role_arn            = aws_iam_role.ecs_task_iam_role.arn
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
@@ -146,30 +67,20 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-resource "aws_default_subnet" "default_subnet_a" {
-  availability_zone = data.aws_availability_zones.available.names[0]
-}
-
-resource "aws_default_subnet" "default_subnet_b" {
-  availability_zone = data.aws_availability_zones.available.names[1]
-}
-
 
 resource "aws_ecs_service" "app_service" {
   name            = "tele-bot-service"
   cluster         = aws_ecs_cluster.cluster.id
   task_definition = aws_ecs_task_definition.task.arn
-  launch_type     = "FARGATE"
+  launch_type     = "EC2"
   desired_count   = 1
   network_configuration {
-    subnets = [
-      aws_default_subnet.default_subnet_a.id,
-      aws_default_subnet.default_subnet_b.id
-    ]
-    assign_public_ip = true
-    security_groups  = [
-      data.aws_security_group.default.id,
-      aws_security_group.image_proxy_sg.id
+    subnets = aws_subnet.private.*.id
+
+    #    assign_public_ip = true
+    security_groups = [
+      aws_security_group.security_group.id,
+      #      aws_security_group.image_proxy_sg.id
     ]
   }
 }

@@ -1,15 +1,13 @@
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /opt/application
 
-RUN pip install --no-cache-dir --trusted-host pypi.python.org pipenv
+RUN --mount=type=cache,target=~/.cache/pip pip install --trusted-host pypi.python.org pipenv
 
-COPY Pipfile .
-COPY Pipfile.lock .
+COPY Pipfile* .
 
-RUN pipenv install --system --deploy --dev
+RUN --mount=type=cache,target=~/.cache/pipenv pipenv install --system --deploy --dev
 COPY ./src ./src
-COPY ./newrelic.ini ./
 COPY bot.sh ./
 COPY ./pyproject.toml ./
 COPY ./migrations ./migrations

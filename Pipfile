@@ -15,7 +15,6 @@ aerich = { file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/de
 aioboto3 = "12.1.0"
 imgproxy = "1.0.0"
 replicate = "0.22.0"
-newrelic = "*"
 tqdm="4.66.1"
 
 [dev-packages]

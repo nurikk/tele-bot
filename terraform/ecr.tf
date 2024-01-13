@@ -9,11 +9,10 @@ resource "aws_ecr_lifecycle_policy" "cleanup_policy" {
       "rules" : [
         {
           "rulePriority" : 1,
-          "description" : "Expire images older than 2 days",
+          "description" : "Keep last 5 images",
           "selection" : {
-            "tagStatus" : "untagged",
-            "countType" : "sinceImagePushed",
-            "countUnit" : "days",
+            "tagStatus" : "any",
+            "countType" : "imageCountMoreThan",
             "countNumber" : 2
           },
           "action" : {
