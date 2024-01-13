@@ -74,6 +74,8 @@ resource "aws_ecs_service" "app_service" {
   task_definition = aws_ecs_task_definition.task.arn
   launch_type     = "EC2"
   desired_count   = 1
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
   network_configuration {
     subnets = aws_subnet.private.*.id
     security_groups = [
