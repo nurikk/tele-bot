@@ -26,7 +26,7 @@ card_form:
     samples: "friend,wife,husband,son,daughter,mom"
   description:
     response: "Describe the person being congratulated. (Pick or send your emoji)"
-    samples: 🐱,🐶,🐰,🐼,🦊,❄️,🦄,🦔,⭐️,🍆,💩,🚀
+    samples: 🐱,🐶,🐰,🐼,🦊,❄️,🦄,🦔,🌞,🐟,🍓,🍬
   depiction:
     coming_up_with_ideas: "Coming up with ideas..."
     response: "What would you like to depict on a postcard?"
