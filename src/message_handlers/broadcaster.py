@@ -29,14 +29,16 @@ async def broadcast_command_handler(message: Message,
                                     image_proxy: Proxy) -> None:
     user = await user_from_message(telegram_user=message.from_user)
     if user.is_admin:
-        sent_message = await message.answer("Generating broadcast cards...")
+        locale = message.text.split('_')[-1]
+        sent_message = await message.answer(f"Generating broadcast cards... {locale=}")
         try:
             await generate_cards(image_generator=image_generator,
                                  s3_uploader=s3_uploader,
                                  async_openai_client=async_openai_client,
                                  bot=bot,
                                  debug_chat_id=settings.debug_chat_id,
-                                 image_proxy=image_proxy
+                                 image_proxy=image_proxy,
+                                 locale=locale
                                  )
         except Exception as ex:
             logging.error(str(ex))

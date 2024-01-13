@@ -1,3 +1,5 @@
+import re
+
 from aiogram.filters import Command, CommandStart
 from aiogram.types import BotCommand
 
@@ -11,4 +13,4 @@ stop_command = Command(stop_bot_command)
 
 img_command = Command(BotCommand(command="img", description="Generate a imagee"))
 
-generate_broadcast = Command(BotCommand(command="generate_broadcast", description="Generate broadcast cards"))
+generate_broadcast = Command(re.compile(r"generate_broadcast_(en|ru)"))

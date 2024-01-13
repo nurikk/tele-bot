@@ -51,38 +51,37 @@ async def render_card(request_id: int, user: db.TelebotUsers, locale: str, image
 
 async def generate_cards(image_generator: ImageGenerator, s3_uploader: S3Uploader,
                          async_openai_client: AsyncOpenAI, bot: Bot,
-                         image_proxy: Proxy, debug_chat_id: int, cards_per_holiday: int = 5):
+                         image_proxy: Proxy, debug_chat_id: int, cards_per_holiday: int = 5, locale: str = "en"):
     from src.message_handlers.card import debug_log
 
     system_user = (await db.TelebotUsers.get_or_create(telegram_id=0,
                                                        defaults={"full_name": "CARD GENERATOR",
                                                                  "username": "__system__bot__"}))[0]
 
-    for locale in ["ru", "en"]:
-        holidays = await db.get_near_holidays(locale, days=2)
-        for holiday in holidays:
-            card_request = await db.CardRequests.create(user=system_user, is_public=True)
+    holidays = await db.get_near_holidays(locale, days=2)
+    for holiday in holidays:
+        card_request = await db.CardRequests.create(user=system_user, is_public=True)
 
-            await db.CardRequestsAnswers.create(request_id=card_request.id,
-                                                question=db.CardRequestQuestions.REASON,
-                                                answer=holiday.full_title(),
-                                                language_code=locale)
+        await db.CardRequestsAnswers.create(request_id=card_request.id,
+                                            question=db.CardRequestQuestions.REASON,
+                                            answer=holiday.full_title(),
+                                            language_code=locale)
 
-            await db.CardRequestsAnswers.create(request_id=card_request.id,
-                                                question=db.CardRequestQuestions.DESCRIPTION,
-                                                answer=i18n.t("card_auto_generator.description", locale=locale),
-                                                language_code=locale)
+        await db.CardRequestsAnswers.create(request_id=card_request.id,
+                                            question=db.CardRequestQuestions.DESCRIPTION,
+                                            answer=i18n.t("card_auto_generator.description", locale=locale),
+                                            language_code=locale)
 
-            depiction_ideas = await get_depiction_ideas(request_id=card_request.id, locale=locale, client=async_openai_client)
+        depiction_ideas = await get_depiction_ideas(request_id=card_request.id, locale=locale, client=async_openai_client)
 
-            await db.CardRequestsAnswers.create(request_id=card_request.id,
-                                                question=db.CardRequestQuestions.DEPICTION,
-                                                answer=random.choice(depiction_ideas),
-                                                language_code=locale)
-            await render_card(request_id=card_request.id, user=system_user,
-                              locale=locale, image_generator=image_generator, s3_uploader=s3_uploader,
-                              async_openai_client=async_openai_client, images_count=cards_per_holiday)
+        await db.CardRequestsAnswers.create(request_id=card_request.id,
+                                            question=db.CardRequestQuestions.DEPICTION,
+                                            answer=random.choice(depiction_ideas),
+                                            language_code=locale)
+        await render_card(request_id=card_request.id, user=system_user,
+                          locale=locale, image_generator=image_generator, s3_uploader=s3_uploader,
+                          async_openai_client=async_openai_client, images_count=cards_per_holiday)
 
-            await debug_log(request_id=card_request.id, bot=bot,
-                            user=system_user,
-                            debug_chat_id=debug_chat_id, image_proxy=image_proxy, s3_uploader=s3_uploader)
+        await debug_log(request_id=card_request.id, bot=bot,
+                        user=system_user,
+                        debug_chat_id=debug_chat_id, image_proxy=image_proxy, s3_uploader=s3_uploader)
