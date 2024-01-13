@@ -60,6 +60,14 @@ resource "aws_security_group" "security_group" {
     description = "any"
   }
 
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["3.129.36.245/32", "3.18.79.139/32", "3.13.16.99/32"]
+    description = "postgres hex.tech"
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
