@@ -56,8 +56,9 @@ resource "aws_security_group" "security_group" {
     to_port     = 0
     protocol    = -1
     self        = "true"
-    cidr_blocks = ["78.145.174.240/32"]
+    cidr_blocks = var.WHITELIST_IP
     description = "any"
+    security_groups = [aws_security_group.lb.id]
   }
 
   ingress {

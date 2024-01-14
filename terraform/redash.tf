@@ -8,40 +8,16 @@ resource "random_string" "redash_secret_key" {
 }
 
 locals {
-  redash_env = [
-    {
-      "name" : "REDASH_DATABASE_URL",
-      "value" : "postgres://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/redash"
-    },
-    {
-      "name" : "REDASH_REDIS_URL",
-      "value" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/1"
-    },
-    {
-      "name" : "REDASH_COOKIE_SECRET",
-      "value" : random_string.redash_cookie_secret.result
-    },
-    {
-      "name" : "REDASH_SECRET_KEY",
-      "value" : random_string.redash_secret_key.result
-    },
-    {
-      "name" : "REDASH_GOOGLE_CLIENT_ID",
-      "value" : var.REDASH_GOOGLE_CLIENT_ID
-    },
-    {
-      "name" : "REDASH_GOOGLE_CLIENT_SECRET",
-      "value" : var.REDASH_GOOGLE_CLIENT_SECRET
-    },
-    {
-      name : "PYTHONUNBUFFERED",
-      value : "0"
-    },
-    {
-      name : "REDASH_LOG_LEVEL",
-      value : "DEBUG"
-    }
-  ]
+  redash_env = {
+    "REDASH_DATABASE_URL" : "postgres://${aws_db_instance.db.username}:${random_password.db_password.result}@${aws_db_instance.db.address}:${aws_db_instance.db.port}/redash",
+    "REDASH_REDIS_URL" : "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}/1",
+    "REDASH_COOKIE_SECRET" : random_string.redash_cookie_secret.result,
+    "REDASH_SECRET_KEY" : random_string.redash_secret_key.result,
+    "REDASH_GOOGLE_CLIENT_ID" : var.REDASH_GOOGLE_CLIENT_ID,
+    "REDASH_GOOGLE_CLIENT_SECRET" : var.REDASH_GOOGLE_CLIENT_SECRET,
+    "PYTHONUNBUFFERED" : "0",
+    "REDASH_LOG_LEVEL" : "DEBUG"
+  }
 
   redash_logs = {
     "logDriver" : "awslogs",
@@ -67,7 +43,12 @@ locals {
           name : "REDASH_WEB_WORKERS",
           value : "1"
         }
-      ], local.redash_env),
+      ], [
+        for k, v in local.redash_env : {
+          name : k
+          value : tostring(v)
+        }
+      ]),
       portMappings = [
         {
           containerPort = 5000
@@ -92,7 +73,12 @@ locals {
           name : "WORKERS_COUNT",
           value : "1"
         }
-      ], local.redash_env)
+      ], [
+        for k, v in local.redash_env : {
+          name : k
+          value : tostring(v)
+        }
+      ])
     },
 
     {
@@ -112,7 +98,12 @@ locals {
           name : "WORKERS_COUNT",
           value : "2"
         }
-      ], local.redash_env)
+      ], [
+        for k, v in local.redash_env : {
+          name : k
+          value : tostring(v)
+        }
+      ])
     },
 
     {
@@ -125,7 +116,12 @@ locals {
       ],
       environment : concat([
 
-      ], local.redash_env)
+      ], [
+        for k, v in local.redash_env : {
+          name : k
+          value : tostring(v)
+        }
+      ])
     }
   ]
 }
