@@ -82,23 +82,13 @@ async def send_photos(chat_id: int, request_id: int, image_proxy: Proxy, s3_uplo
 
 
 async def deliver_generated_samples_to_user(request_id: int, bot: Bot, user: TelebotUsers, locale: str,
-                                            s3_uploader: S3Uploader, image_proxy: Proxy,
-                                            debug_chat_id: int = None) -> None:
-    try:
-        async with ChatActionSender.upload_photo(bot=bot, chat_id=user.telegram_id):
-            request = await CardRequests.get(id=request_id)
-            await bot.send_message(chat_id=user.telegram_id, text=request.greeting_text)
-            await send_photos(chat_id=user.telegram_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
-            keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
-            await bot.send_message(chat_id=user.telegram_id, text=i18n.t('share_description', locale=locale), reply_markup=keyboard.as_markup())
-            await bot.send_message(chat_id=user.telegram_id, text=i18n.t('commands.card', locale=locale))
-            if debug_chat_id:
-                await debug_log(request_id=request_id, bot=bot,
-                                user=user,
-                                debug_chat_id=debug_chat_id, image_proxy=image_proxy, s3_uploader=s3_uploader)
-    except BadRequestError as e:
-        if isinstance(e.body, dict) and 'message' in e.body:
-            await bot.send_message(chat_id=user.telegram_id, text=e.body['message'])
+                                            s3_uploader: S3Uploader, image_proxy: Proxy) -> None:
+    request = await CardRequests.get(id=request_id)
+    await bot.send_message(chat_id=user.telegram_id, text=request.greeting_text)
+    await send_photos(chat_id=user.telegram_id, request_id=request_id, image_proxy=image_proxy, s3_uploader=s3_uploader, bot=bot)
+    keyboard = generate_image_keyboad(locale=locale, request_id=request_id)
+    await bot.send_message(chat_id=user.telegram_id, text=i18n.t('share_description', locale=locale), reply_markup=keyboard.as_markup())
+    await bot.send_message(chat_id=user.telegram_id, text=i18n.t('commands.card', locale=locale))
 
 
 async def get_samples(question: CardRequestQuestions, locale: str) -> list[str]:
@@ -214,11 +204,19 @@ async def process_depiction(message: types.Message, state: FSMContext, bot: Bot,
 
     await message.answer(i18n.t("card_form.wait.response", locale=locale), reply_markup=ReplyKeyboardRemove())
     await state.clear()
-    await card_gen.render_card(request_id=request_id, user=user, locale=locale, image_generator=image_generator,
-                               s3_uploader=s3_uploader, async_openai_client=async_openai_client)
-    await deliver_generated_samples_to_user(request_id=request_id, bot=bot, user=user, locale=locale,
-                                            debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
-                                            image_proxy=image_proxy)
+    async with ChatActionSender.choose_sticker(bot=bot, chat_id=user.telegram_id):
+        await card_gen.render_card(request_id=request_id, user=user, locale=locale, image_generator=image_generator,
+                                   s3_uploader=s3_uploader, async_openai_client=async_openai_client)
+    async with ChatActionSender.upload_photo(bot=bot, chat_id=user.telegram_id):
+        await deliver_generated_samples_to_user(request_id=request_id, bot=bot, user=user, locale=locale,
+                                                s3_uploader=s3_uploader,
+                                                image_proxy=image_proxy)
+
+    await debug_log(request_id=request_id, bot=bot,
+                    user=user,
+                    debug_chat_id=settings.debug_chat_id,
+                    image_proxy=image_proxy,
+                    s3_uploader=s3_uploader)
 
 
 async def regenerate(query: CallbackQuery, callback_data: CardActionCallback, bot: Bot,
@@ -231,7 +229,7 @@ async def regenerate(query: CallbackQuery, callback_data: CardActionCallback, bo
         await card_gen.render_card(request_id=callback_data.request_id, user=user, locale=locale, image_generator=image_generator,
                                    s3_uploader=s3_uploader, async_openai_client=async_openai_client)
         await deliver_generated_samples_to_user(request_id=callback_data.request_id, bot=bot, user=user, locale=locale,
-                                                debug_chat_id=settings.debug_chat_id, s3_uploader=s3_uploader,
+                                                s3_uploader=s3_uploader,
                                                 image_proxy=image_proxy)
 
 

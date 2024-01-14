@@ -1,19 +1,24 @@
 from datetime import datetime
 from unittest.mock import patch
 
+import pytest
+from openai import AsyncOpenAI
+
 from src.main import init_i18n
 from src.prompt_generator import generate_prompt
 
 
-def test_generate_prompt():
+@pytest.mark.asyncio
+async def test_generate_prompt(settings):
     init_i18n()
+    async_openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    assert generate_prompt(data={"reason": "reason",
-                                 "relationship": "relationship",
-                                 "description": "description",
-                                 "depiction": "depiction"}, locale="en") != ''
+    # assert await generate_prompt(data={"reason": "New year",
+    #                                    "relationship": "Friend",
+    #                                    "description": "🦔",
+    #                                    "depiction": "A hedgehog riding on a cheese wheel"}, locale="en", async_openai_client=async_openai_client) == ''
 
-    assert generate_prompt(data={"reason": "reason",
-                                 "relationship": "relationship",
-                                 "description": "description",
-                                 "depiction": "depiction"}, locale="ru") != ''
+    assert await generate_prompt(data={"reason": "Новый год",
+                                       "relationship": "Друг",
+                                       "description": "🦔",
+                                       "depiction": "Еж катающийся на сырном колесе"}, locale="ru", async_openai_client=async_openai_client) == ''

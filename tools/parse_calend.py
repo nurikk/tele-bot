@@ -5,7 +5,7 @@ import icalendar
 from openai import AsyncOpenAI
 from tqdm import tqdm
 
-from src.card_gen import ensure_english
+from src.prompt_generator import ensure_english
 from src.settings import Settings
 import requests
 

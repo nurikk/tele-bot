@@ -8,39 +8,18 @@ from tortoise.expressions import F
 from src import db
 from src.image_generator import ImageGenerator
 from src.img import Proxy
-from src.prompt_generator import generate_prompt, get_depiction_ideas, get_greeting_text
+from src.prompt_generator import generate_prompt, get_depiction_ideas, get_greeting_text, ensure_english
 from src.s3 import S3Uploader
-
-
-async def ensure_english(text: str, locale: str, async_openai_client: AsyncOpenAI) -> str:
-    if locale != 'en':
-        response = await async_openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You will be provided with a sentence in Russian, and your task is to translate it into English."
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ],
-            temperature=0.7,
-            max_tokens=int(len(text) * 1.5),
-            top_p=1
-        )
-        return response.choices[0].message.content
-    return text
 
 
 async def render_card(request_id: int, user: db.TelebotUsers, locale: str, image_generator: ImageGenerator,
                       s3_uploader: S3Uploader, async_openai_client: AsyncOpenAI, images_count: int = 2):
     answers = await db.CardRequestsAnswers.filter(request_id=request_id).all().values()
     data = {item['question'].value: item['answer'] for item in answers}
-    prompt = await ensure_english(text=generate_prompt(data=data, locale=locale), locale=locale, async_openai_client=async_openai_client)
+    prompt = await generate_prompt(data=data, locale=locale, async_openai_client=async_openai_client)
     greeting_text = await get_greeting_text(async_openai_client=async_openai_client, reason=data['reason'])
     await db.CardRequests.filter(id=request_id).update(generated_prompt=prompt, greeting_text=greeting_text)
+
     generated_images = await image_generator.generate(prompt=prompt, images_count=images_count)
     image_paths = []
     for image_url in generated_images:
