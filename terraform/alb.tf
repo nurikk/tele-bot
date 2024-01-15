@@ -1,6 +1,6 @@
 resource "aws_security_group" "lb" {
-  name        = "example-alb-security-group"
-  vpc_id      = aws_vpc.default.id
+  name   = "example-alb-security-group"
+  vpc_id = aws_vpc.default.id
 
   ingress {
     protocol    = "tcp"
@@ -10,9 +10,9 @@ resource "aws_security_group" "lb" {
   }
 
   egress {
-    from_port = 0
-    to_port   = 0
-    protocol  = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -29,13 +29,16 @@ resource "aws_lb_target_group" "hello_world" {
   protocol    = "HTTP"
   vpc_id      = aws_vpc.default.id
   target_type = "ip"
+
+  deregistration_delay = 0
+
   health_check {
-    path = "/health"
-    port = "traffic-port"
-    protocol = "HTTP"
-    interval = 30
-    timeout = 5
-    healthy_threshold = 5
+    path                = "/health"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 5
     unhealthy_threshold = 2
 
   }

@@ -25,9 +25,35 @@ data "aws_iam_policy_document" "task_assume_role_policy" {
 }
 
 
+data "aws_iam_policy_document" "ssmmessages" {
+  statement {
+    effect  = "Allow"
+    actions = [
+      "ssmmessages:CreateControlChannel",
+      "ssmmessages:CreateDataChannel",
+      "ssmmessages:OpenControlChannel",
+      "ssmmessages:OpenDataChannel"
+    ]
+    resources = ["*"]
+  }
+}
+
+
+resource "aws_iam_policy" "ssmmessages" {
+  name        = "test-policy"
+  description = "A test policy"
+  policy      = data.aws_iam_policy_document.ssmmessages.json
+}
+
+
 resource "aws_iam_role" "ecs_task_iam_role" {
   name               = "ECS_TaskIAMRole"
   assume_role_policy = data.aws_iam_policy_document.task_assume_role_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "ssmmessages-attach" {
+  role       = aws_iam_role.ecs_task_iam_role.name
+  policy_arn = aws_iam_policy.ssmmessages.arn
 }
 
 resource "aws_ecs_task_definition" "task" {
@@ -45,6 +71,14 @@ resource "aws_ecs_task_definition" "task" {
   memory                   = local.task_memory
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
   task_role_arn            = aws_iam_role.ecs_task_iam_role.arn
+
+  volume {
+    name      = "efs"
+    efs_volume_configuration {
+      file_system_id = aws_efs_file_system.telebot.id
+      root_directory = "/"
+    }
+  }
 }
 
 resource "aws_iam_role" "ecsTaskExecutionRole" {
