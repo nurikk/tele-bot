@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from collections import defaultdict
 
@@ -58,7 +59,10 @@ async def broadcast_handler(message: CallbackQuery,
         locale = card_request.answers[0].language_code
 
         user_ids = await db.get_user_ids_for_locale(locale=locale)
-        recipients = await db.TelebotUsers.filter(id__in=user_ids).all()
+        recipients = await db.TelebotUsers.filter(
+            id__in=user_ids,
+            last_seen__lte=db.get_today() - datetime.timedelta(hours=24),
+        ).all()
         total = len(recipients)
         exceptions = defaultdict(int)
         for idx, recipient in enumerate(tqdm(recipients)):
@@ -68,7 +72,6 @@ async def broadcast_handler(message: CallbackQuery,
                     request_id=callback_data.request_id,
                     user=recipient,
                     locale=locale,
-                    debug_chat_id=None,
                     s3_uploader=s3_uploader,
                     image_proxy=image_proxy,
                     bot=bot

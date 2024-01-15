@@ -30,6 +30,8 @@ async def user_from_message(telegram_user: types.User, referred_by: int = None, 
     if is_new and referred_by:
         logging.info(f"Registered new referral user {user.full_name}(@{user.username}) new user, referred by {referred_by}")
         await handle_referral(user_id=referred_by, bot=bot)
+    if not is_new:
+        await TelebotUsers.filter(id=user.id).update(last_seen=get_today())
     logging.info(f"User {user.full_name} {'created' if is_new else 'updated'}")
     return user
 
