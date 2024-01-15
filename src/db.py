@@ -100,7 +100,7 @@ class Holidays(Model):
 
 
 def get_today():
-    return datetime.datetime.now()
+    return datetime.datetime.utcnow()
 
 
 async def get_near_holidays(country_code: str, days: int = 7) -> list[Holidays]:
