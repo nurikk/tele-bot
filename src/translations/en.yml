@@ -37,12 +37,9 @@ card_form:
   wait:
     response: "Drawing! Please wait a little"
 
-prompt: "A %{reason} greeting picture.
- This object or animal looks like %{description}. 
- Depict %{depiction}. 
- Funny and fun picture. 
- Add confetti. 
- %{style}"
+prompt: "A %{reason} greeting funny picture.
+ This animal is %{description}. 
+ Depict %{depiction} %{style}"
 
 style_samples: "in pinup style,in cartoon style,with magic,in pop-art,in vintage style, in photorealistic style,in collage inspired design"
 
