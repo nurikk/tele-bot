@@ -166,7 +166,7 @@ async def get_user_ids_for_locale(locale: str) -> list[int]:
 
 
 async def load_holidays():
-    for country in ['ru', 'en']:
+    for country in i18n.config.settings['available_locales']:
         loaded_holidays = await Holidays.filter(country_code=country).count()
         if loaded_holidays == 0:
             logging.info(f"Loading holidays for {country}")

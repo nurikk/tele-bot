@@ -59,3 +59,14 @@ month_names:
 
 card_auto_generator:
   description: ""
+
+#0-512 characters
+bot_description: "✨ A bot for creating unique and creative greeting cards! Answer a few questions to get a personalized greeting card 💌 for everyone you love! Ideal for birthdays, holidays, and other important events 🎉 🎂 🎈Make every message special!"
+
+#Short description for the bot; 0-120 characters
+bot_short_description: "Crafting unique and personalized greeting cards 💌"
+
+bot_commands:
+  card: "Create a new postcard"
+  stop: "Stop the bot"
+  calendar: "Events calendar"

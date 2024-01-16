@@ -8,6 +8,7 @@ import i18n
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.types import BotCommand
 from openai import AsyncOpenAI
 
 from src import db
@@ -26,17 +27,24 @@ from src.settings import Settings
 
 async def startup(bot: Bot) -> None:
     await set_default_commands(bot)
+    for locale in i18n.config.settings['available_locales']:
+        await bot.set_my_description(description=i18n.t('bot_description', locale=locale), language_code=locale)
+        await bot.set_my_short_description(short_description=i18n.t('bot_short_description', locale=locale), language_code=locale)
     logging.info("bot started")
 
 
 async def set_default_commands(bot: Bot) -> None:
-    await bot.set_my_commands(
-        [
-            card_bot_command,
-            stop_bot_command,
-            calendar_bot_command
-        ]
-    )
+    commands = [
+        card_bot_command,
+        stop_bot_command,
+        calendar_bot_command
+    ]
+    for locale in i18n.config.settings['available_locales']:
+        await bot.set_my_commands(
+            [
+                BotCommand(command=c.command, description=i18n.t(f'bot_commands.{c.command}', locale=locale)) for c in commands
+            ], language_code=locale
+        )
 
 
 async def main(dispatcher: Dispatcher, telegram_bot_token: str, db_url: str) -> None:
@@ -58,6 +66,7 @@ async def main(dispatcher: Dispatcher, telegram_bot_token: str, db_url: str) -> 
 
 
 def init_i18n():
+    i18n.set('available_locales', ['en', 'ru'])
     i18n.set('skip_locale_root_data', True)
     i18n.set('filename_format', '{locale}.{format}')
     i18n.load_path.append((pathlib.Path(__file__).parent / 'translations'))
