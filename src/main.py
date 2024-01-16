@@ -30,6 +30,7 @@ async def startup(bot: Bot) -> None:
     for locale in i18n.config.settings['available_locales']:
         await bot.set_my_description(description=i18n.t('bot_description', locale=locale), language_code=locale)
         await bot.set_my_short_description(short_description=i18n.t('bot_short_description', locale=locale), language_code=locale)
+
     logging.info("bot started")
 
 

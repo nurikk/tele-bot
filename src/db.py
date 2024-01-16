@@ -75,6 +75,13 @@ class CardResult(Model):
     result_image: str = fields.TextField(null=True)
 
 
+class CardShareEvent(Model):
+    id: int = fields.IntField(pk=True)
+    request = fields.ForeignKeyField("models.CardRequests", related_name="shares", index=True)
+    user = fields.ForeignKeyField("models.TelebotUsers", related_name="shares", index=True)
+    created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)
+
+
 class CardRequestsAnswers(Model):
     id: int = fields.IntField(pk=True)
     created_at: datetime.datetime = fields.DatetimeField(auto_now_add=True)

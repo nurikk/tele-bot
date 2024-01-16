@@ -299,10 +299,12 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
 
 
 async def chosen_inline_result_handler(chosen_inline_result: types.ChosenInlineResult):
+    user = await user_from_message(telegram_user=chosen_inline_result.from_user)
     request_id = chosen_inline_result.query
     if request_id:
         from tortoise.expressions import F
         await db.CardRequests.filter(id=request_id).update(shares_count=F("shares_count") + 1)
+        await db.CardShareEvent.create(request_id=request_id, user=user)
 
 
 async def edited_message_handler(edited_message: types.Message):
