@@ -29,7 +29,6 @@ locals {
       portMappings = [
         {
           containerPort = 3000
-          hostPort      = 3000
         }
       ]
     }

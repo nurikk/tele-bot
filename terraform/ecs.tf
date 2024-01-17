@@ -91,7 +91,7 @@ resource "aws_launch_template" "ecs_lt" {
 
 resource "aws_autoscaling_group" "ecs_asg" {
   name                = "telebot-ecs-asg"
-  vpc_zone_identifier = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
+  vpc_zone_identifier = aws_subnet.public[*].id
   desired_capacity    = 1
   max_size            = 1
   min_size            = 1

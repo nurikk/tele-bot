@@ -5,10 +5,7 @@ resource "random_password" "db_password" {
 
 resource "aws_db_subnet_group" "default" {
   name = "main"
-  subnet_ids = concat(
-    aws_subnet.public[*].id,
-    aws_subnet.private[*].id
-  )
+  subnet_ids =  aws_subnet.public[*].id
 
 }
 

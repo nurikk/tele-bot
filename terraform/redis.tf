@@ -1,6 +1,6 @@
 resource "aws_elasticache_subnet_group" "redis" {
   name       = "telebot-cache-subnet"
-  subnet_ids = concat(aws_subnet.public.*.id, aws_subnet.private.*.id)
+  subnet_ids = aws_subnet.public.*.id
 }
 
 resource "aws_elasticache_cluster" "redis" {

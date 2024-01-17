@@ -67,7 +67,7 @@ resource "aws_ecs_task_definition" "task" {
   ))
 
   requires_compatibilities = ["EC2"]
-  network_mode             = "awsvpc"
+  network_mode             = "bridge"
   memory                   = local.task_memory
   execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
   task_role_arn            = aws_iam_role.ecs_task_iam_role.arn
@@ -113,13 +113,13 @@ resource "aws_ecs_service" "app_service" {
   deployment_maximum_percent         = 100
 
   enable_execute_command = true
-  network_configuration {
-    subnets         = aws_subnet.private.*.id
-    security_groups = [
-      aws_security_group.security_group.id,
-      #      aws_security_group.image_proxy_sg.id
-    ]
-  }
+#  network_configuration {
+#    subnets         = aws_subnet.public.*.id
+#    security_groups = [
+#      aws_security_group.security_group.id,
+#      #      aws_security_group.image_proxy_sg.id
+#    ]
+#  }
 
   depends_on = [aws_lb_listener.hello_world]
 

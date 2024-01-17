@@ -34,7 +34,7 @@ locals {
       portMappings = [
         {
           containerPort = 8088
-          hostPort      = 8088
+#          hostPort      = 8088
         }
       ],
       "mountPoints" : [

@@ -28,13 +28,13 @@ resource "aws_lb_target_group" "hello_world" {
   port        = 80
   protocol    = "HTTP"
   vpc_id      = aws_vpc.default.id
-  target_type = "ip"
+  target_type = "instance"
 
   deregistration_delay = 0
 
   health_check {
     path                = "/health"
-    port                = "traffic-port"
+#    port                = "traffic-port"
     protocol            = "HTTP"
     interval            = 30
     timeout             = 5
