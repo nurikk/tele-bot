@@ -1,3 +1,6 @@
+locals {
+  subnet_count = 2
+}
 resource "aws_vpc" "default" {
   cidr_block           = var.vpc_cidr_block
   enable_dns_support   = true
@@ -10,7 +13,7 @@ resource "aws_vpc" "default" {
 
 
 resource "aws_subnet" "public" {
-  count                   = 2
+  count                   = local.subnet_count
   cidr_block              = cidrsubnet(aws_vpc.default.cidr_block, 8, 2 + count.index)
   availability_zone       = data.aws_availability_zones.available.names[count.index]
   vpc_id                  = aws_vpc.default.id
@@ -18,7 +21,7 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_subnet" "private" {
-  count             = 2
+  count             = local.subnet_count
   cidr_block        = cidrsubnet(aws_vpc.default.cidr_block, 8, count.index)
   availability_zone = data.aws_availability_zones.available.names[count.index]
   vpc_id            = aws_vpc.default.id
@@ -90,28 +93,29 @@ resource "aws_security_group" "security_group" {
 
 #==============
 resource "aws_eip" "gateway" {
-  count      = 2
+  count      = local.subnet_count
   domain     = "vpc"
   depends_on = [aws_internet_gateway.internet_gateway]
 }
+
 resource "aws_nat_gateway" "gateway" {
-  count         = 2
-  subnet_id     = element(aws_subnet.public.*.id, count.index)
-  allocation_id = element(aws_eip.gateway.*.id, count.index)
+  count         = length(aws_subnet.public)
+  subnet_id     = aws_subnet.public[count.index].id
+  allocation_id = aws_eip.gateway[count.index].id
 }
 
 resource "aws_route_table" "private" {
-  count  = 2
+  count  = length(aws_nat_gateway.gateway)
   vpc_id = aws_vpc.default.id
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = element(aws_nat_gateway.gateway.*.id, count.index)
+    nat_gateway_id = aws_nat_gateway.gateway[count.index].id
   }
 }
 
 resource "aws_route_table_association" "private" {
-  count          = 2
-  subnet_id      = element(aws_subnet.private.*.id, count.index)
-  route_table_id = element(aws_route_table.private.*.id, count.index)
+  count          = length(aws_subnet.private)
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
 }
