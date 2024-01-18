@@ -81,6 +81,6 @@ variable "az_count" {
 }
 
 variable "WHITELIST_IP" {
-  type = list(string)
+  type    = list(string)
   default = []
 }

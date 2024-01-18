@@ -11,22 +11,12 @@ resource "aws_vpc" "default" {
 }
 
 
-
 resource "aws_subnet" "public" {
   count                   = local.subnet_count
   cidr_block              = cidrsubnet(aws_vpc.default.cidr_block, 8, 2 + count.index)
   availability_zone       = data.aws_availability_zones.available.names[count.index]
   vpc_id                  = aws_vpc.default.id
   map_public_ip_on_launch = true
-}
-
-data "aws_security_group" "default" {
-  vpc_id = aws_vpc.default.id
-
-  filter {
-    name   = "group-name"
-    values = ["default"]
-  }
 }
 
 
@@ -42,7 +32,6 @@ resource "aws_route" "internet_access" {
 }
 
 
-
 resource "aws_security_group" "security_group" {
   name   = "ecs-security-group"
   vpc_id = aws_vpc.default.id
@@ -54,7 +43,6 @@ resource "aws_security_group" "security_group" {
     self        = "true"
     cidr_blocks = var.WHITELIST_IP
     description = "any"
-    security_groups = [aws_security_group.lb.id]
   }
 
   ingress {

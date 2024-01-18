@@ -20,10 +20,10 @@ provider "google" {
 }
 
 resource "google_looker_instance" "looker-instance" {
-  name              = "test-looker-instance"
-  platform_edition  = "LOOKER_CORE_TRIAL"
+  name             = "test-looker-instance"
+  platform_edition = "LOOKER_CORE_TRIAL"
   oauth_config {
-    client_id = var.GOOGLE_OAUTH_CLIENT_ID
+    client_id     = var.GOOGLE_OAUTH_CLIENT_ID
     client_secret = var.GOGGLE_OAUTH_CLIENT_SECRET
   }
 }

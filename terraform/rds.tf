@@ -4,8 +4,8 @@ resource "random_password" "db_password" {
 }
 
 resource "aws_db_subnet_group" "default" {
-  name = "main"
-  subnet_ids =  aws_subnet.public[*].id
+  name       = "main"
+  subnet_ids = aws_subnet.public[*].id
 
 }
 

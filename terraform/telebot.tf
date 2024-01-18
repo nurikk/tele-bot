@@ -65,3 +65,14 @@ locals {
     }
   ]
 }
+
+resource "aws_ecs_service" "app_service" {
+  name                               = "tele-bot-service"
+  cluster                            = aws_ecs_cluster.cluster.id
+  task_definition                    = aws_ecs_task_definition.task.arn
+  launch_type                        = "EC2"
+  desired_count                      = 1
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+  enable_execute_command             = true
+}
