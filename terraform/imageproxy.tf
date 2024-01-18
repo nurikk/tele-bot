@@ -7,6 +7,12 @@ locals {
   imgproxy_container_name = "imgproxy"
   imgproxy_container_port = 8080
   imgproxy_env            = {
+    "IMGPROXY_KEY" : var.IMGPROXY_KEY,
+    "IMGPROXY_SALT" : var.IMGPROXY_SALT,
+    "IMGPROXY_USE_S3" : true,
+    "AWS_REGION" : data.aws_region.current.name,
+    "AWS_ACCESS_KEY_ID" : aws_iam_access_key.telebot_s3_uploader.id
+    "AWS_SECRET_ACCESS_KEY" : aws_iam_access_key.telebot_s3_uploader.secret
   }
   imgproxy_container_definitions = [
     {
@@ -22,29 +28,9 @@ locals {
         }
       },
       environment : [
-        {
-          "name" : "IMGPROXY_KEY",
-          "value" : var.IMGPROXY_KEY
-        },
-        {
-          "name" : "IMGPROXY_SALT",
-          "value" : var.IMGPROXY_SALT
-        },
-        {
-          "name" : "IMGPROXY_USE_S3",
-          "value" : "true"
-        },
-        {
-          "name" : "AWS_REGION",
-          "value" : data.aws_region.current.name
-        },
-        {
-          "name" : "AWS_ACCESS_KEY_ID",
-          "value" : aws_iam_access_key.telebot_s3_uploader.id
-        },
-        {
-          "name" : "AWS_SECRET_ACCESS_KEY",
-          "value" : aws_iam_access_key.telebot_s3_uploader.secret
+        for k, v in local.imgproxy_env : {
+          name : k
+          value : tostring(v)
         }
       ],
       portMappings = [
