@@ -1,5 +1,5 @@
 locals {
-  telebot_container_name = "telebot"
+  telebot_container_name        = "telebot"
   telebot_container_definitions = [
     {
       name : local.telebot_container_name,
@@ -60,7 +60,17 @@ locals {
         {
           "name" : "IMGPROXY_HOSTNAME",
           "value" : local.imgproxy_hostname
+        },
+
+        {
+          "name" : "IMGPROXY_KEY",
+          "value" : var.IMGPROXY_KEY
+        },
+        {
+          "name" : "IMGPROXY_SALT",
+          "value" : var.IMGPROXY_SALT
         }
+
       ]
     }
   ]
