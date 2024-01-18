@@ -271,8 +271,8 @@ async def inline_query(query: types.InlineQuery, bot: Bot,
         reason = await CardRequestsAnswers.filter(request_id=request.id, question=CardRequestQuestions.REASON).first()
         if reason:
             for result in request.results:
-                photo_url = image_proxy.get_full_image(s3_uploader.get_website_url(result.result_image))
-                thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_website_url(result.result_image), width=thumbnail_width,
+                photo_url = image_proxy.get_full_image(s3_uploader.get_full_s3_url(result.result_image))
+                thumbnail_url = image_proxy.get_thumbnail(s3_uploader.get_full_s3_url(result.result_image), width=thumbnail_width,
                                                           height=thumbnail_height)
 
                 logging.info(f"{photo_url=} {thumbnail_url=}")
