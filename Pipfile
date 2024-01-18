@@ -11,7 +11,7 @@ python-i18n = { extras = ["YAML"], version = "0.3.9" }
 redis = "5.0.1"
 tortoise-orm = { extras = ["asyncpg"], version = "0.20.0" }
 #aerich = "0.7.2"
-aerich = { file = "https://codeload.github.com/tortoise/aerich/zip/refs/heads/dev" }
+aerich = { file = "https://codeload.github.com/tortoise/aerich/zip/b63fbcc7a4e7be51bbb27892ae85486732772fd3" }
 aioboto3 = "12.1.0"
 imgproxy = "1.0.0"
 replicate = "0.22.0"
