@@ -61,7 +61,7 @@ resource "aws_ecs_task_definition" "task" {
   container_definitions = jsonencode(concat(
     local.telebot_container_definitions,
     local.duckdns_container_definitions,
-    local.superset_container_definitions
+    local.imgproxy_container_definitions
     #    local.redash_container_definitions,
     #    local.metabase_container_definitions
   ))
@@ -113,20 +113,14 @@ resource "aws_ecs_service" "app_service" {
   deployment_maximum_percent         = 100
 
   enable_execute_command = true
-#  network_configuration {
-#    subnets         = aws_subnet.public.*.id
-#    security_groups = [
-#      aws_security_group.security_group.id,
-#      #      aws_security_group.image_proxy_sg.id
-#    ]
-#  }
+
 
   depends_on = [aws_lb_listener.hello_world]
 
 
   load_balancer {
     target_group_arn = aws_lb_target_group.hello_world.id
-    container_name   = local.superset_container_name
-    container_port   = 8088
+    container_name   = local.imgproxy_container_name
+    container_port   = local.imgproxy_container_port
   }
 }

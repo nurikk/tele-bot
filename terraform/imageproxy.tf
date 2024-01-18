@@ -1,53 +1,58 @@
-#resource "aws_security_group" "image_proxy_sg" {
-#  vpc_id = aws_vpc.default.id
-#
-#  ingress {
-#    from_port   = 8080
-#    to_port     = 8080
-#    protocol    = "tcp"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-#
-#  egress {
-#    from_port   = 0
-#    to_port     = 0
-#    protocol    = "-1"
-#    cidr_blocks = ["0.0.0.0/0"]
-#  }
-#}
+resource "random_string" "imgproxy_secret_key" {
+  length  = 32
+  special = false
+}
 
-#resource "aws_lb" "ecs_alb" {
-#  name               = "ecs-alb"
-#  internal           = false
-#  load_balancer_type = "application"
-#  security_groups    = [
-#    aws_security_group.image_proxy_sg.id
-#  ]
-#  subnets = [
-#    aws_subnet.default_subnet_a.id,
-#    aws_subnet.default_subnet_b.id
-#  ]
-#}
+locals {
+  imgproxy_container_name = "imgproxy"
+  imgproxy_container_port = 8080
+  imgproxy_env            = {
+  }
+  imgproxy_container_definitions = [
+    {
+      name : local.imgproxy_container_name,
+      image : "darthsim/imgproxy:latest",
+      essential : false,
+      logConfiguration : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : aws_cloudwatch_log_group.logs.name,
+          "awslogs-region" : data.aws_region.current.name,
+          "awslogs-stream-prefix" : "imgproxy"
+        }
+      },
+      environment : [
+        {
+          "name" : "IMGPROXY_KEY",
+          "value" : var.IMGPROXY_KEY
+        },
+        {
+          "name" : "IMGPROXY_SALT",
+          "value" : var.IMGPROXY_SALT
+        },
+        {
+          "name" : "IMGPROXY_USE_S3",
+          "value" : "true"
+        },
+        {
+          "name" : "AWS_REGION",
+          "value" : data.aws_region.current.name
+        },
+        {
+          "name" : "AWS_ACCESS_KEY_ID",
+          "value" : aws_iam_access_key.telebot_s3_uploader.id
+        },
+        {
+          "name" : "AWS_SECRET_ACCESS_KEY",
+          "value" : aws_iam_access_key.telebot_s3_uploader.secret
+        }
+      ],
+      portMappings = [
+        {
+          containerPort = local.imgproxy_container_port
+        }
+      ]
+    }
+  ]
+}
 
-#resource "aws_lb_listener" "ecs_alb_listener" {
-#  load_balancer_arn = aws_lb.ecs_alb.arn
-#  port              = 8080
-#  protocol          = "HTTP"
-#
-#  default_action {
-#    type             = "forward"
-#    target_group_arn = aws_lb_target_group.ecs_tg.arn
-#  }
-#}
-#
-#resource "aws_lb_target_group" "ecs_tg" {
-#  name        = "ecs-target-group"
-#  port        = 8080
-#  protocol    = "HTTP"
-#  target_type = "ip"
-#  vpc_id      = aws_vpc.default.id
-#
-#  health_check {
-#    path = "/health"
-#  }
-#}
