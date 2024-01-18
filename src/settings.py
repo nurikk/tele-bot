@@ -25,7 +25,6 @@ class Settings(pydantic_settings.BaseSettings):
     image_thumbnail_website_prefix: str = ''
 
     imgproxy_hostname: str = ''
-    imgproxy_port: str = '8080'
     imgproxy_key: str = ''
     imgproxy_salt: str = ''
 
