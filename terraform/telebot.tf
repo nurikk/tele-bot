@@ -59,7 +59,7 @@ locals {
         },
         {
           "name" : "IMGPROXY_HOSTNAME",
-          "value" : "img.${var.DUCK_DNS_DOMAIN}.duckdns.org"
+          "value" : local.imgproxy_hostname
         }
       ]
     }

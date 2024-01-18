@@ -1,6 +1,7 @@
 locals {
   imgproxy_container_name = "imgproxy"
   imgproxy_container_port = 8081
+  imgproxy_hostname = "img.${var.DUCK_DNS_DOMAIN}.duckdns.org"
   imgproxy_env            = {
     "IMGPROXY_KEY" : var.IMGPROXY_KEY,
     "IMGPROXY_SALT" : var.IMGPROXY_SALT,
@@ -37,7 +38,7 @@ locals {
       dockerLabels : {
         "traefik.enable" : "true",
         "traefik.http.routers.img.entrypoints": "websecure",
-        "traefik.http.routers.img.rule": "Host(`img.${local.full_duck_dns_domain}`)"
+        "traefik.http.routers.img.rule": "Host(`${local.imgproxy_hostname}`)",
       }
     }
   ]

@@ -41,6 +41,6 @@ class ImageProxy(Proxy):
 
     def get_full_image(self, url: str) -> str:
         return ImgProxy(url,
-                        proxy_host=f'http://{self.imgproxy_hostname}',
+                        proxy_host=f'https://{self.imgproxy_hostname}',
                         key=self.imgproxy_key,
                         salt=self.imgproxy_salt)()
