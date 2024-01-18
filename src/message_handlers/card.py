@@ -73,7 +73,7 @@ async def send_photos(chat_id: int, request_id: int, image_proxy: Proxy, s3_uplo
 
     photos = [
         InputMediaPhoto(
-            media=URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_website_url(image_result.result_image)), filename="card.png")
+            media=URLInputFile(url=image_proxy.get_full_image(s3_uploader.get_full_s3_url(image_result.result_image)), filename="card.png")
         )
         for image_result in image_results
     ]
