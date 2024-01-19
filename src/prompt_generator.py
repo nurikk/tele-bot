@@ -30,7 +30,6 @@ async def ensure_english(text: str, locale: str, async_openai_client: AsyncOpenA
 
 
 async def convert_to_sd_prompt(text: str, locale: str, async_openai_client: AsyncOpenAI) -> str:
-
     messages = [{
         "role": "system",
         "content": "Generate keywords for stable diffusion from this phrase"
