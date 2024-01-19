@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install --trusted-host pypi.p
 RUN --mount=type=cache,target=/root/.cache/pipenv \
     --mount=type=bind,source=Pipfile,target=Pipfile \
     --mount=type=bind,source=Pipfile.lock,target=Pipfile.lock \
-    pipenv install --system --deploy --dev
+    pipenv install --system --deploy
 
 USER appuser
 COPY . .
