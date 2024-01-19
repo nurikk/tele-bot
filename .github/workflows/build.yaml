@@ -32,6 +32,7 @@ jobs:
           ECR_REPOSITORY: tele-bot-repo
           IMAGE_TAG: latest
         run: |
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG || true
           # Build a docker container and push it to ECR 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           echo "Pushing image to ECR..."
