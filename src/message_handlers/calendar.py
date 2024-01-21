@@ -8,7 +8,7 @@ from src.message_handlers.card import escape_markdown
 
 
 async def calendar_command_handler(message: Message) -> None:
-    user = await user_from_message(telegram_user=message.from_user)
+    await user_from_message(telegram_user=message.from_user)
     locale = message.from_user.language_code
 
     holidays = await db.get_near_holidays(locale, days=7)
@@ -18,7 +18,11 @@ async def calendar_command_handler(message: Message) -> None:
             f"""[{escape_markdown(holiday.date.strftime("%Y-%m-%d"))} {escape_markdown(holiday.title)}]({holiday.url}) \n {escape_markdown(holiday.description)}"""
         )
 
-    await message.reply("\n\n".join(calendar_msg_markdown), parse_mode="MarkdownV2", link_preview_options=LinkPreviewOptions(is_disabled=True))
+    await message.reply(
+        "\n\n".join(calendar_msg_markdown),
+        parse_mode="MarkdownV2",
+        link_preview_options=LinkPreviewOptions(is_disabled=True),
+    )
 
 
 def register(dp: Dispatcher):

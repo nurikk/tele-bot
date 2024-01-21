@@ -16,7 +16,12 @@ def register(dp: Dispatcher):
         await message.answer("Hi there! What's your prompt?")
 
     @form_router.message(ImgForm.prompt)
-    async def process_dont_like_write_bots(message: types.Message, state: FSMContext, bot: Bot, image_generator: ImageGenerator) -> None:
+    async def process_dont_like_write_bots(
+        message: types.Message,
+        state: FSMContext,
+        bot: Bot,
+        image_generator: ImageGenerator,
+    ) -> None:
         await message.answer("Hold my beer!")
         await state.clear()
         prompt = message.text

@@ -1,6 +1,3 @@
-from datetime import datetime
-from unittest.mock import patch
-
 import pytest
 from openai import AsyncOpenAI
 
@@ -18,7 +15,16 @@ async def test_generate_prompt(settings):
     #                                    "description": "🦔",
     #                                    "depiction": "A hedgehog riding on a cheese wheel"}, locale="en", async_openai_client=async_openai_client) == ''
 
-    assert await generate_prompt(data={"reason": "Новый год",
-                                       "relationship": "Друг",
-                                       "description": "🦔",
-                                       "depiction": "Еж катающийся на сырном колесе"}, locale="ru", async_openai_client=async_openai_client) == ''
+    assert (
+        await generate_prompt(
+            data={
+                "reason": "Новый год",
+                "relationship": "Друг",
+                "description": "🦔",
+                "depiction": "Еж катающийся на сырном колесе",
+            },
+            locale="ru",
+            async_openai_client=async_openai_client,
+        )
+        == ""
+    )

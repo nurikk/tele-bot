@@ -31,11 +31,12 @@ class ReplicateGenerator(ImageGenerator):
         self.client = replicate.Client(api_token=api_token)
         self.api_token = api_token
 
-    async def async_run(self,
-                        ref,
-                        input,
-                        **params,
-                        ):
+    async def async_run(
+        self,
+        ref,
+        input,
+        **params,
+    ):
         version, owner, name, version_id = identifier._resolve(ref)
 
         if version or version_id:
@@ -67,19 +68,22 @@ class ReplicateGenerator(ImageGenerator):
         return prediction.output
 
     async def generate(self, prompt: str, images_count: int = 1) -> list[str]:
-        futures = [self.async_run(
-            "playgroundai/playground-v2-1024px-aesthetic:42fe626e41cc811eaf02c94b892774839268ce1994ea778eba97103fe1ef51b8",
-            input={
-                "width": 1024,
-                "height": 1024,
-                "prompt": prompt,
-                "scheduler": "K_EULER_ANCESTRAL",
-                "guidance_scale": 3,
-                "apply_watermark": False,
-                "negative_prompt": "ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, people, real people, face",
-                "num_inference_steps": 50
-            }
-        ) for _ in range(images_count)]
+        futures = [
+            self.async_run(
+                "playgroundai/playground-v2-1024px-aesthetic:42fe626e41cc811eaf02c94b892774839268ce1994ea778eba97103fe1ef51b8",
+                input={
+                    "width": 1024,
+                    "height": 1024,
+                    "prompt": prompt,
+                    "scheduler": "K_EULER_ANCESTRAL",
+                    "guidance_scale": 3,
+                    "apply_watermark": False,
+                    "negative_prompt": "ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, people, real people, face",
+                    "num_inference_steps": 50,
+                },
+            )
+            for _ in range(images_count)
+        ]
         logging.info(f"Starting {len(futures)} image generation tasks")
         results = await tqdm.gather(*futures)
         return [r[0] for r in results]
