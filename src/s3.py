@@ -29,16 +29,15 @@ class S3Uploader:
         return file_path
 
     async def upload_image_from_url(self, image_url: str) -> str:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as resp:
-                if resp.status == 200:
-                    image = await resp.read()
-                    file_path = f"images/{md5(image).hexdigest()}.png"
-                    async with self.session.client("s3") as s3:
-                        await s3.upload_fileobj(
-                            BytesIO(image), self.s3_bucket_name, file_path
-                        )
-                        return file_path
+        async with aiohttp.ClientSession() as session, session.get(image_url) as resp:
+            if resp.status == 200:
+                image = await resp.read()
+                file_path = f"images/{md5(image).hexdigest()}.png"
+                async with self.session.client("s3") as s3:
+                    await s3.upload_fileobj(
+                        BytesIO(image), self.s3_bucket_name, file_path
+                    )
+                    return file_path
 
     def get_full_s3_url(self, file_path: str) -> str:
         return f"s3://{self.s3_bucket_name}/{file_path}"

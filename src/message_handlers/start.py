@@ -1,3 +1,5 @@
+from typing import Optional
+
 import i18n
 from aiogram import Dispatcher, types, Bot
 from aiogram.filters import CommandObject
@@ -10,7 +12,10 @@ from src.settings import Settings
 
 
 async def handle_new_user(
-    message: types.Message, bot: Bot, cards_per_user: int = 5, referred_by: int = None
+    message: types.Message,
+    bot: Bot,
+    cards_per_user: int = 5,
+    referred_by: Optional[int] = None,
 ):
     await user_from_message(
         telegram_user=message.from_user,

@@ -13,6 +13,7 @@ from tqdm.asyncio import tqdm
 
 
 class ImageGenerator(abc.ABC):
+    @abc.abstractmethod
     async def generate(self, prompt: str, images_count: int = 1) -> list[str]:
         raise NotImplementedError()
 

@@ -1,3 +1,4 @@
+import contextlib
 import json
 import random
 
@@ -99,10 +100,9 @@ async def get_depiction_ideas(
         ],
     )
     samples = []
-    try:
+    with contextlib.suppress(json.decoder.JSONDecodeError):
         samples = json.loads(stream.choices[0].message.content)
-    except json.decoder.JSONDecodeError:
-        pass
+
     return samples
 
 

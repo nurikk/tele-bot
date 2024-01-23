@@ -1,12 +1,15 @@
 import abc
+from typing import Optional
 
 from imgproxy import ImgProxy
 
 
 class Proxy(abc.ABC):
+    @abc.abstractmethod
     def get_thumbnail(self, url: str, width=500, height=500) -> str:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def get_full_image(self, url: str) -> str:
         raise NotImplementedError()
 
@@ -26,8 +29,8 @@ class ImageProxy(Proxy):
     def __init__(
         self,
         imgproxy_hostname: str,
-        imgproxy_key: str = None,
-        imgproxy_salt: str = None,
+        imgproxy_key: Optional[str] = None,
+        imgproxy_salt: Optional[str] = None,
     ):
         self.imgproxy_hostname = imgproxy_hostname
         self.imgproxy_key = imgproxy_key

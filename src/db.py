@@ -3,7 +3,9 @@ import json
 import logging
 import os
 from enum import Enum
+from typing import Optional
 
+import aiofiles
 import i18n
 from aiogram import types, Bot
 from tortoise import fields, Tortoise, connections
@@ -26,9 +28,9 @@ async def handle_referral(user_id: int, bot: Bot = None, cards_per_user: int = 5
 
 async def user_from_message(
     telegram_user: types.User,
-    referred_by: int = None,
-    bot: Bot = None,
-    cards_per_user: int = 5,
+    referred_by: Optional[int] = None,
+    bot: Optional[Bot] = None,
+    cards_per_user: Optional[int] = 5,
 ):
     user_props = {
         "full_name": telegram_user.full_name,
@@ -231,8 +233,9 @@ async def load_holidays():
             file_abs_path = os.path.join(
                 os.path.dirname(__file__), f"holidays/{country}.json"
             )
-            with open(file_abs_path) as f:
-                holidays = json.load(f)
+            async with aiofiles.open(file_abs_path, mode="r") as handle:
+                data = await handle.read()
+                holidays = json.load(data)
                 for day in holidays:
                     for holiday_description in day["holidays"]:
                         await Holidays.create(
