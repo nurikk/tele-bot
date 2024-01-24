@@ -6,7 +6,6 @@ resource "random_password" "traefik_dashboard_password" {
 
 locals {
 
-  socket_proxy_image = "tecnativa/docker-socket-proxy"
   traefik_image      = "traefik:v2.11"
 
   traefik_dashboard_username = "admin"
