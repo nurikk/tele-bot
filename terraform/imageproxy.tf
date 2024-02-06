@@ -48,7 +48,7 @@ locals {
 resource "aws_ecs_task_definition" "imgproxy" {
   family             = "imgproxy"
   execution_role_arn = aws_iam_role.ecsTaskExecutionRole.arn
-  memory             = 300
+  memory             = 400
 
 
 
