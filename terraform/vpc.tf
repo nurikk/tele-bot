@@ -53,13 +53,6 @@ resource "aws_security_group" "security_group" {
     description = "postgres hex.tech"
   }
 
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["${google_looker_instance.looker-instance.egress_public_ip}/32"]
-    description = "looker"
-  }
 
   egress {
     from_port   = 0
