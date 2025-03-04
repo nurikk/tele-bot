@@ -14,7 +14,7 @@ resource "aws_db_instance" "db" {
   allocated_storage    = 20
   db_name              = "telebot"
   engine               = "postgres"
-  engine_version       = "16.1"
+  engine_version       = "16.3"
   instance_class       = "db.t3.micro"
   username             = "bot"
   password             = random_password.db_password.result
