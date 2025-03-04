@@ -1,11 +1,13 @@
 ---
   name: Terraform Cloud Speculative Run
-  on:
-    pull_request:
-      branches:
-        - master
-      paths:
-        - 'terraform/**.tf'
+  on: workflow_dispatch
+
+#  on:
+#    pull_request:
+#      branches:
+#        - master
+#      paths:
+#        - 'terraform/**.tf'
   env:
     TF_CLOUD_ORGANIZATION: "nurikodd"
     TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"

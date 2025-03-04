@@ -1,13 +1,14 @@
 ---
   name: Terraform Cloud Apply Run
-  
-  on:
-    push:
-      branches:
-        - master
+  on: workflow_dispatch
 
-      paths:
-        - 'terraform/**.tf'
+#  on:
+#    push:
+#      branches:
+#        - master
+#
+#      paths:
+#        - 'terraform/**.tf'
   
   
   concurrency: production
